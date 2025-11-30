@@ -136,57 +136,22 @@ async function getUserByUsername(username) {
     return await callTwitterAPI('user', { username });
 }
 
-// 获取用户推文 - 支持多种可能的参数格式
+// 获取用户推文
 async function getUserTweets(userId, count = 20) {
-    // 尝试不同的端点和参数组合
-    const attempts = [
-        { endpoint: 'user-tweets', params: { user: userId, count } },
-        { endpoint: 'user-tweets', params: { userId: userId, count } },
-        { endpoint: 'tweets', params: { user: userId, count } },
-        { endpoint: 'tweets', params: { userId: userId, count } }
-    ];
-    
-    for (const attempt of attempts) {
-        try {
-            const result = await callTwitterAPI(attempt.endpoint, attempt.params);
-            console.log(`✅ 成功使用端点: ${attempt.endpoint}, 参数:`, JSON.stringify(attempt.params));
-            return result;
-        } catch (error) {
-            if (error.response?.status === 404) {
-                console.log(`端点 ${attempt.endpoint} 不存在，尝试下一个...`);
-                continue;
-            }
-            throw error;
-        }
-    }
-    
-    throw new Error('所有端点都失败了');
+    console.log(`调用 user-tweets API, 用户ID: ${userId}, 数量: ${count}`);
+    return await callTwitterAPI('user-tweets', { user: userId, count: count });
 }
 
-// 获取用户回复 - 支持多种可能的参数格式
+// 获取用户回复
 async function getUserReplies(userId, count = 20) {
-    const attempts = [
-        { endpoint: 'user-replies', params: { user: userId, count } },
-        { endpoint: 'user-replies', params: { userId: userId, count } },
-        { endpoint: 'replies', params: { user: userId, count } },
-        { endpoint: 'replies', params: { userId: userId, count } }
-    ];
-    
-    for (const attempt of attempts) {
-        try {
-            const result = await callTwitterAPI(attempt.endpoint, attempt.params);
-            console.log(`✅ 成功使用端点: ${attempt.endpoint}, 参数:`, JSON.stringify(attempt.params));
-            return result;
-        } catch (error) {
-            if (error.response?.status === 404) {
-                console.log(`端点 ${attempt.endpoint} 不存在，尝试下一个...`);
-                continue;
-            }
-            throw error;
-        }
-    }
-    
-    throw new Error('所有端点都失败了');
+    console.log(`调用 user-replies API, 用户ID: ${userId}, 数量: ${count}`);
+    return await callTwitterAPI('user-replies', { user: userId, count: count });
+}
+
+// 获取推文的转发列表
+async function getPostRetweets(postId, count = 40) {
+    console.log(`调用 retweets API, 推文ID: ${postId}, 数量: ${count}`);
+    return await callTwitterAPI('retweets', { pid: postId, count: count });
 }
 
 // 检查新推文
@@ -532,14 +497,20 @@ app.post('/api/users', async (req, res) => {
             return res.status(400).json({ success: false, message: '用户名不能为空' });
         }
         
+        console.log(`尝试添加用户: ${username}`);
+        
         // 获取用户信息
         const userData = await getUserByUsername(username);
+        
+        console.log(`获取用户信息结果:`, JSON.stringify(userData, null, 2));
         
         if (!userData || !userData.result) {
             return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
         const userId = userData.result.rest_id;
+        console.log(`用户 @${username} 的ID: ${userId} (类型: ${typeof userId})`);
+        
         const users = getMonitoredUsers();
         
         // 检查是否已存在
@@ -548,7 +519,7 @@ app.post('/api/users', async (req, res) => {
         }
         
         // 添加用户
-        users.push({
+        const newUser = {
             userId,
             username,
             displayName: userData.result.legacy?.name || username,
@@ -558,12 +529,16 @@ app.post('/api/users', async (req, res) => {
             monitorPinned: true,
             monitorRetweets: true,
             addedAt: new Date().toISOString()
-        });
+        };
         
+        console.log(`保存用户数据:`, JSON.stringify(newUser, null, 2));
+        
+        users.push(newUser);
         saveMonitoredUsers(users);
         
         res.json({ success: true, message: '用户添加成功' });
     } catch (error) {
+        console.error('添加用户失败:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
