@@ -33,11 +33,11 @@ echo ""
 echo "🔧 安装必要工具..."
 yum install -y curl wget git
 
-# 安装Node.js 18.x
+# 安装Node.js 20.x LTS
 echo ""
-echo "📦 安装 Node.js 18.x..."
+echo "📦 安装 Node.js 20.x LTS..."
 if ! command -v node &> /dev/null; then
-    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
     yum install -y nodejs
     echo "✅ Node.js 安装完成"
     node -v
