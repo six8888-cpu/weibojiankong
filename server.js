@@ -116,11 +116,17 @@ async function callTwitterAPI(endpoint, params = {}) {
             headers: {
                 'X-RapidAPI-Key': config.rapidApiKey,
                 'X-RapidAPI-Host': 'twitter241.p.rapidapi.com'
-            }
+            },
+            timeout: 15000
         });
         return response.data;
     } catch (error) {
-        console.error(`调用Twitter API失败 (${endpoint}):`, error.message);
+        if (error.response) {
+            console.error(`调用Twitter API失败 (${endpoint}):`, error.response.status, error.response.statusText);
+            console.error('请求参数:', JSON.stringify(params));
+        } else {
+            console.error(`调用Twitter API失败 (${endpoint}):`, error.message);
+        }
         throw error;
     }
 }
@@ -130,14 +136,57 @@ async function getUserByUsername(username) {
     return await callTwitterAPI('user', { username });
 }
 
-// 获取用户推文
+// 获取用户推文 - 支持多种可能的参数格式
 async function getUserTweets(userId, count = 20) {
-    return await callTwitterAPI('user-tweets', { user: userId, count });
+    // 尝试不同的端点和参数组合
+    const attempts = [
+        { endpoint: 'user-tweets', params: { user: userId, count } },
+        { endpoint: 'user-tweets', params: { userId: userId, count } },
+        { endpoint: 'tweets', params: { user: userId, count } },
+        { endpoint: 'tweets', params: { userId: userId, count } }
+    ];
+    
+    for (const attempt of attempts) {
+        try {
+            const result = await callTwitterAPI(attempt.endpoint, attempt.params);
+            console.log(`✅ 成功使用端点: ${attempt.endpoint}, 参数:`, JSON.stringify(attempt.params));
+            return result;
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.log(`端点 ${attempt.endpoint} 不存在，尝试下一个...`);
+                continue;
+            }
+            throw error;
+        }
+    }
+    
+    throw new Error('所有端点都失败了');
 }
 
-// 获取用户回复
+// 获取用户回复 - 支持多种可能的参数格式
 async function getUserReplies(userId, count = 20) {
-    return await callTwitterAPI('user-replies', { user: userId, count });
+    const attempts = [
+        { endpoint: 'user-replies', params: { user: userId, count } },
+        { endpoint: 'user-replies', params: { userId: userId, count } },
+        { endpoint: 'replies', params: { user: userId, count } },
+        { endpoint: 'replies', params: { userId: userId, count } }
+    ];
+    
+    for (const attempt of attempts) {
+        try {
+            const result = await callTwitterAPI(attempt.endpoint, attempt.params);
+            console.log(`✅ 成功使用端点: ${attempt.endpoint}, 参数:`, JSON.stringify(attempt.params));
+            return result;
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.log(`端点 ${attempt.endpoint} 不存在，尝试下一个...`);
+                continue;
+            }
+            throw error;
+        }
+    }
+    
+    throw new Error('所有端点都失败了');
 }
 
 // 检查新推文
