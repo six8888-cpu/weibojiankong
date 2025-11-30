@@ -19,7 +19,66 @@
 2. **RapidAPI账号** - 用于访问Twitter API
 3. **Telegram Bot** - 用于发送通知
 
-## 🚀 快速开始
+## 🚀 一键安装（推荐）
+
+### CentOS/RHEL 一键安装
+
+在CentOS 7/8/9或RHEL系统上，使用以下命令一键安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/six8888-cpu/twitter-monitor/main/install.sh | sudo bash
+```
+
+或者分步执行：
+
+```bash
+# 下载安装脚本
+wget https://raw.githubusercontent.com/six8888-cpu/twitter-monitor/main/install.sh
+
+# 添加执行权限
+chmod +x install.sh
+
+# 运行安装
+sudo bash install.sh
+```
+
+**安装脚本会自动完成以下操作：**
+- ✅ 更新系统包
+- ✅ 安装 Node.js 18.x
+- ✅ 安装 PM2 进程管理器
+- ✅ 克隆项目代码到 `/opt/twitter-monitor`
+- ✅ 安装项目依赖
+- ✅ 配置防火墙（开放3000端口）
+- ✅ 创建系统服务
+- ✅ 可选择立即启动服务
+
+**安装完成后：**
+- 访问 `http://你的服务器IP:3000` 打开Web界面
+- 按照界面提示配置API密钥
+- 开始添加监控用户
+
+**服务管理命令：**
+```bash
+# 启动服务
+systemctl start twitter-monitor
+
+# 停止服务
+systemctl stop twitter-monitor
+
+# 重启服务
+systemctl restart twitter-monitor
+
+# 查看状态
+systemctl status twitter-monitor
+
+# 查看日志
+journalctl -u twitter-monitor -f
+
+# 设置开机自启
+systemctl enable twitter-monitor
+```
+
+## 🚀 手动安装
 
 ### 1. 安装依赖
 
