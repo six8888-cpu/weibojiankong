@@ -122,8 +122,12 @@ async function loadUsers() {
     usersList.innerHTML = '<div class="loading">加载中...</div>';
     
     try {
-        const response = await fetch('/api/users');
+        // 添加时间戳防止缓存
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/users?t=${timestamp}`);
         users = await response.json();
+        
+        console.log('加载用户列表:', users.length, '个用户');
         
         if (users.length === 0) {
             usersList.innerHTML = '<div class="empty">暂无监控用户，请添加</div>';
@@ -132,6 +136,7 @@ async function loadUsers() {
         
         renderUsers();
     } catch (error) {
+        console.error('加载用户列表失败:', error);
         usersList.innerHTML = '<div class="empty">加载失败: ' + error.message + '</div>';
     }
 }
@@ -269,20 +274,26 @@ async function deleteUser(userId, username) {
         return;
     }
     
+    console.log(`删除用户: ${username}, ID: ${userId}`);
+    
     try {
         const response = await fetch(`/api/users/${userId}`, {
             method: 'DELETE'
         });
         
         const result = await response.json();
+        console.log('删除结果:', result);
         
         if (result.success) {
             showToast('用户已删除', 'success');
-            loadUsers();
+            // 等待一下再刷新，确保后端已保存
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await loadUsers();
         } else {
             showToast('删除失败: ' + result.message, 'error');
         }
     } catch (error) {
+        console.error('删除用户错误:', error);
         showToast('删除失败: ' + error.message, 'error');
     }
 }

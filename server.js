@@ -567,18 +567,41 @@ app.put('/api/users/:userId', (req, res) => {
 app.delete('/api/users/:userId', (req, res) => {
     try {
         const { userId } = req.params;
-        let users = getMonitoredUsers();
+        console.log(`删除用户请求，userId: ${userId} (类型: ${typeof userId})`);
         
-        users = users.filter(u => u.userId !== userId);
+        let users = getMonitoredUsers();
+        const beforeCount = users.length;
+        console.log(`删除前用户数量: ${beforeCount}`);
+        
+        // 使用字符串比较（因为URL参数总是字符串）
+        users = users.filter(u => {
+            const match = String(u.userId) !== String(userId);
+            if (!match) {
+                console.log(`找到匹配用户: ${u.username} (ID: ${u.userId})`);
+            }
+            return match;
+        });
+        
+        const afterCount = users.length;
+        console.log(`删除后用户数量: ${afterCount}`);
+        
+        if (beforeCount === afterCount) {
+            console.warn(`警告: 没有找到ID为 ${userId} 的用户`);
+            return res.status(404).json({ success: false, message: '用户不存在' });
+        }
+        
         saveMonitoredUsers(users);
         
         // 清理缓存
         const cache = getCache();
         delete cache[userId];
+        delete cache[String(userId)]; // 同时删除字符串形式的key
         saveCache(cache);
         
+        console.log(`✅ 用户删除成功`);
         res.json({ success: true, message: '用户删除成功' });
     } catch (error) {
+        console.error('删除用户失败:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
