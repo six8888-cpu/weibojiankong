@@ -277,7 +277,9 @@ def stop_monitor():
     """停止监控"""
     try:
         if scheduler.running:
-            scheduler.shutdown(wait=False)
+            # 优雅关闭：先暂停，再关闭
+            scheduler.pause()
+            scheduler.shutdown(wait=True)
             logger.info("监控调度器已停止")
             
         return jsonify({'success': True, 'message': '监控已停止'})
@@ -325,6 +327,19 @@ def run_monitor_now():
 
 
 if __name__ == '__main__':
+    import signal
+    import sys
+    
+    # 优雅关闭处理
+    def signal_handler(sig, frame):
+        logger.info("收到关闭信号，正在优雅关闭...")
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     # 创建必要的目录
     Path('templates').mkdir(exist_ok=True)
     Path('static').mkdir(exist_ok=True)
@@ -334,5 +349,9 @@ if __name__ == '__main__':
     
     # 启动Flask应用
     logger.info("启动Web服务器...")
-    app.run(host='0.0.0.0', port=9527, debug=False)
+    try:
+        app.run(host='0.0.0.0', port=9527, debug=False)
+    finally:
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
 
