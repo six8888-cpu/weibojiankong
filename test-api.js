@@ -17,9 +17,9 @@ console.log('========================================');
 console.log('Twitter API 端点测试');
 console.log('========================================\n');
 
-// 可能的端点名称列表
+// 可能的端点名称列表（根据实际API文档更新）
 const possibleEndpoints = {
-    userInfo: ['user', 'getUser', 'userByUsername', 'user-by-username'],
+    userInfo: ['about-account', 'user', 'getUser', 'userByUsername', 'user-by-username'],
     userTweets: ['user-tweets', 'userTweets', 'tweets', 'getUserTweets', 'user/tweets'],
     userReplies: ['user-replies', 'userReplies', 'replies', 'getUserReplies', 'user/replies']
 };
@@ -118,4 +118,6 @@ findWorkingEndpoints().catch(error => {
     console.error('测试过程出错:', error.message);
     process.exit(1);
 });
+
+
 

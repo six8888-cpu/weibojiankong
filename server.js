@@ -153,9 +153,10 @@ async function callTwitterAPI(endpoint, params = {}) {
     }
 }
 
-// 获取用户信息
+// 获取用户信息 - 使用 about-account 端点
 async function getUserByUsername(username) {
-    return await callTwitterAPI('user', { username });
+    console.log(`📡 获取用户信息: /about-account?username=${username}`);
+    return await callTwitterAPI('about-account', { username });
 }
 
 // 获取用户推文

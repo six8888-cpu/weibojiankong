@@ -73,7 +73,7 @@ async function testFullFlow() {
     console.log('步骤1: 通过用户名获取用户信息');
     console.log('========================================');
     
-    const userResult = await callAPI('user', { username: TEST_USERNAME }, '调用 /user 端点');
+    const userResult = await callAPI('about-account', { username: TEST_USERNAME }, '调用 /about-account 端点');
     
     if (!userResult.success) {
         console.log('\n❌ 无法获取用户信息，流程终止。');
