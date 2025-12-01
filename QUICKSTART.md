@@ -27,42 +27,39 @@ chmod +x install.sh
 
 等待安装完成（约5-10分钟）
 
-### 第三步：配置并启动
+### 第三步：启动服务
 
-1. 编辑配置：
 ```bash
-nano config.yaml
-```
-
-2. 修改以下内容：
-```yaml
-telegram:
-  bot_token: "替换为你的Token"
-  chat_id: "替换为你的ChatID"
-```
-
-3. 启动服务：
-```bash
+# 启动服务
 sudo systemctl start weibo-monitor
 sudo systemctl enable weibo-monitor
-```
 
-4. 开放端口：
-```bash
+# 开放端口
 sudo ufw allow 5000  # Ubuntu
 # 或
 sudo firewall-cmd --add-port=5000/tcp --permanent && sudo firewall-cmd --reload  # CentOS
 ```
 
-## ✅ 访问系统
+## ✅ Web界面配置
 
 浏览器打开：`http://你的服务器IP:5000`
 
-在Web界面中可以：
-- 添加监控关键词
-- 启动/停止监控
-- 查看实时日志
-- 修改配置
+**必须在Web界面完成以下配置：**
+
+1. **配置Telegram**（必须）
+   - 获取Bot Token: Telegram搜索 `@BotFather`，发送 `/newbot`
+   - 获取Chat ID: Telegram搜索 `@userinfobot`，点击Start
+   - 在"Telegram配置"填入Token和Chat ID
+   - 点击"保存配置"
+   - 点击"测试连接"验证
+
+2. **添加关键词**
+   - 在"关键词管理"输入关键词
+   - 点击"添加关键词"
+
+3. **启动监控**
+   - 点击"启动监控"按钮
+   - 查看日志确认运行正常
 
 ## 🎯 完成！
 

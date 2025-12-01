@@ -27,29 +27,7 @@ chmod +x install.sh
 # 脚本会自动安装：Python3、Chrome、依赖包、创建服务
 
 
-# 第三步：配置Telegram
-# ========================================
-
-# 1. 获取Telegram Bot Token
-# - Telegram搜索：@BotFather
-# - 发送：/newbot
-# - 获取Token
-
-# 2. 获取Chat ID
-# - Telegram搜索：@userinfobot
-# - 点击Start
-# - 获取ID
-
-# 3. 编辑配置文件
-nano config.yaml
-
-# 修改以下内容：
-# telegram:
-#   bot_token: "你的TOKEN"
-#   chat_id: "你的CHAT_ID"
-
-
-# 第四步：启动服务
+# 第三步：启动服务
 # ========================================
 
 # 启动服务
@@ -62,7 +40,7 @@ sudo systemctl enable weibo-monitor
 sudo systemctl status weibo-monitor
 
 
-# 第五步：开放防火墙端口
+# 第四步：开放防火墙端口
 # ========================================
 
 # Ubuntu/Debian:
@@ -76,15 +54,33 @@ sudo firewall-cmd --reload
 # ⚠️ 重要：还需要在云服务器控制台的安全组中开放5000端口
 
 
-# 第六步：访问Web界面
+# 第五步：访问Web界面进行配置（推荐）
 # ========================================
 # 浏览器打开：
 # http://你的服务器IP:5000
 
-# 在Web界面中：
-# 1. 添加关键词
-# 2. 点击"启动监控"
-# 3. 测试Telegram连接
+# 在Web界面中完成以下配置：
+
+# 1. 配置Telegram（必须）
+#    - 获取Bot Token: Telegram搜索 @BotFather，发送 /newbot
+#    - 获取Chat ID: Telegram搜索 @userinfobot，点击Start
+#    - 在"Telegram配置"区域填入Token和Chat ID
+#    - 点击"保存配置"
+#    - 点击"测试连接"确认配置正确
+
+# 2. 配置监控地址（可选）
+#    - 在"监控配置"区域修改微博地址
+#    - 设置检查间隔（默认1分钟）
+#    - 点击"保存配置"
+
+# 3. 添加关键词
+#    - 在"关键词管理"区域输入关键词
+#    - 点击"添加关键词"
+#    - 可以添加多个关键词
+
+# 4. 启动监控
+#    - 点击"启动监控"按钮
+#    - 查看实时日志确认运行正常
 
 
 # ========================================
