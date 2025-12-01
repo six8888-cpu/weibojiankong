@@ -610,28 +610,25 @@ app.post('/api/users', async (req, res) => {
         }
         
         // 从 about-account API 响应中提取 rest_id
-        // 递归查找 rest_id 的函数
+        // 专门查找 rest_id 字段（纯数字）
         function findRestId(obj, path = '') {
             if (!obj || typeof obj !== 'object') return null;
             
-            // 直接检查当前对象
-            if (obj.rest_id) {
-                console.log(`✅ 找到 rest_id 在路径: ${path}.rest_id`);
-                return String(obj.rest_id);
+            // 只查找名为 rest_id 的字段
+            if (obj.hasOwnProperty('rest_id') && obj.rest_id) {
+                const id = String(obj.rest_id);
+                console.log(`   发现 rest_id 字段在 ${path || '根'}: "${id}"`);
+                
+                // 检查是否是纯数字
+                if (/^\d+$/.test(id)) {
+                    console.log(`   ✅ rest_id 是纯数字: ${id}`);
+                    return id;
+                } else {
+                    console.log(`   ⚠️  rest_id 不是纯数字，跳过`);
+                }
             }
             
-            // 检查常见的别名
-            if (obj.id_str) {
-                console.log(`✅ 找到 id_str 在路径: ${path}.id_str`);
-                return String(obj.id_str);
-            }
-            
-            if (obj.id && typeof obj.id === 'string') {
-                console.log(`✅ 找到 id 在路径: ${path}.id`);
-                return String(obj.id);
-            }
-            
-            // 递归搜索
+            // 递归搜索所有子对象，继续查找 rest_id
             for (const key of Object.keys(obj)) {
                 if (typeof obj[key] === 'object' && obj[key] !== null) {
                     const found = findRestId(obj[key], path ? `${path}.${key}` : key);
@@ -642,7 +639,9 @@ app.post('/api/users', async (req, res) => {
             return null;
         }
         
+        console.log(`\n开始查找 rest_id 字段...`);
         const userId = findRestId(userData);
+        console.log(`\n最终提取的用户ID: ${userId || '❌ 未找到 rest_id 字段'}\n`);
         
         if (!userId) {
             console.error(`❌ 无法从响应中提取用户ID`);
