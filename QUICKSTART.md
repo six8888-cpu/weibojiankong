@@ -1,118 +1,71 @@
-# 快速开始指南
+# ⚡ 快速开始 - 5分钟部署指南
 
-## 🚀 5分钟快速部署
+适用于香港/海外服务器的快速部署
 
-### 第一步：安装依赖
+## 📋 前置要求
+
+- Ubuntu 20.04+ / Debian 11+ / CentOS 8+
+- Root或sudo权限
+- 服务器可访问外网
+
+## 🚀 三步部署
+
+### 第一步：上传代码
 
 ```bash
-npm install
+cd /opt
+git clone <你的仓库> weibo-monitor
+cd weibo-monitor
 ```
 
-### 第二步：启动服务器
+### 第二步：一键安装
 
 ```bash
-npm start
+chmod +x install.sh
+./install.sh
 ```
 
-服务器将在 http://localhost:3000 启动
+等待安装完成（约5-10分钟）
 
-### 第三步：配置系统
+### 第三步：配置并启动
 
-1. 打开浏览器访问 http://localhost:3000
-2. 点击"**⚙️ 系统配置**"右侧的"**显示**"按钮
-3. 填入以下信息：
-
-#### 获取 RapidAPI Key
-- 访问：https://rapidapi.com/davethebeast/api/twitter241
-- 注册并订阅API（有免费套餐）
-- 复制API Key
-
-#### 获取 Telegram Bot Token
-- 在Telegram搜索：@BotFather
-- 发送：`/newbot`
-- 按提示创建机器人
-- 保存返回的Token
-
-#### 获取 Telegram Chat ID
-- 在Telegram搜索：@userinfobot
-- 发送任意消息
-- 机器人会返回你的Chat ID
-
-4. 填写完成后点击"**💾 保存配置**"
-5. 点击"**📨 测试Telegram**"验证配置
-
-### 第四步：添加监控用户
-
-1. 在"**➕ 添加监控用户**"输入框中输入Twitter用户名（例如：elonmusk）
-2. 点击"**添加**"按钮
-3. 用户添加成功后，可以在下方看到监控选项：
-   - ✅ 启用监控（总开关）
-   - 📝 新推文（监控新发布的推文）
-   - 💬 回复（监控回复内容）
-   - 📌 置顶（监控置顶推文变化）
-   - 🔄 转发（监控转发行为）
-
-### 第五步：开始监控
-
-- 系统会自动按照设定的间隔（默认5分钟）检查监控用户
-- 也可以点击"**▶️ 立即检查**"按钮手动触发检查
-- 所有通知将发送到你的Telegram
-
-## ⚡ 重要提示
-
-### 首次运行
-- 首次添加用户后，系统会初始化数据缓存
-- **第一次检查不会发送通知**
-- 从第二次检查开始，才会通知新动态
-
-### API限制
-- RapidAPI免费套餐有每月请求次数限制
-- 建议检查间隔设置为 5-15 分钟
-- 不要添加过多监控用户
-
-### 持续运行
-- 需要保持服务器运行才能持续监控
-- Windows可以最小化命令行窗口
-- Linux建议使用PM2或screen运行
-
-## 🔧 常见问题
-
-### Q: Telegram收不到消息？
-A: 
-1. 确认Bot Token和Chat ID正确
-2. 必须先给Bot发送一条消息（任意内容）激活对话
-3. 点击"测试Telegram"验证配置
-
-### Q: 添加用户失败？
-A:
-1. 检查用户名是否正确（不要带@符号）
-2. 确认RapidAPI Key配置正确
-3. 检查API订阅是否有效
-
-### Q: 如何在服务器上24小时运行？
-A: 使用PM2（推荐）
+1. 编辑配置：
 ```bash
-npm install -g pm2
-pm2 start server.js --name twitter-monitor
-pm2 save
+nano config.yaml
 ```
 
-## 📊 监控示例
+2. 修改以下内容：
+```yaml
+telegram:
+  bot_token: "替换为你的Token"
+  chat_id: "替换为你的ChatID"
+```
 
-假设监控 @elonmusk，系统会：
-- ✅ 新推文时立即通知
-- ✅ 回复他人推文时通知
-- ✅ 更换置顶推文时通知
-- ✅ 转发他人推文时通知
+3. 启动服务：
+```bash
+sudo systemctl start weibo-monitor
+sudo systemctl enable weibo-monitor
+```
 
-所有通知都会发送到你的Telegram，格式清晰，包含链接可直接点击查看。
+4. 开放端口：
+```bash
+sudo ufw allow 5000  # Ubuntu
+# 或
+sudo firewall-cmd --add-port=5000/tcp --permanent && sudo firewall-cmd --reload  # CentOS
+```
 
-## 🎯 下一步
+## ✅ 访问系统
 
-- 添加更多监控用户
-- 自定义每个用户的监控选项
-- 根据需要调整检查间隔
-- 查看完整的 README.md 了解更多功能
+浏览器打开：`http://你的服务器IP:5000`
 
-祝使用愉快！🎉
+在Web界面中可以：
+- 添加监控关键词
+- 启动/停止监控
+- 查看实时日志
+- 修改配置
 
+## 🎯 完成！
+
+系统已经开始监控，发现关键词会自动发送Telegram通知。
+
+详细文档见：[DEPLOY.md](DEPLOY.md)

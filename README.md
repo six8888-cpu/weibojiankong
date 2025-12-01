@@ -1,328 +1,251 @@
-# Twitter 监控系统
+# 微博关键词监控程序
 
-一个简洁高效的Twitter监控系统，实时监控指定用户的Twitter动态，并通过Telegram发送通知。
+这是一个自动监控指定微博用户主页的Python脚本，当检测到包含特定关键词的微博时，会通过Telegram发送通知提醒。
 
-## 🚀 快速安装
+## 功能特点
 
-### CentOS/RHEL 一键安装命令
+- ✅ 自动监控指定微博用户的最新内容
+- ✅ 支持多个关键词监控
+- ✅ 通过Telegram Bot发送实时通知
+- ✅ 使用无头浏览器绕过反爬机制
+- ✅ 自动去重，避免重复通知
+- ✅ 可配置检查间隔
+- ✅ 完整的日志记录
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/six8888-cpu/twitter-monitor/main/install.sh | sudo bash
-```
+## 系统要求
 
-安装完成后访问：`http://你的服务器IP:3000`
+- Python 3.7+
+- Google Chrome 浏览器
+- 稳定的网络连接
 
----
+## 安装步骤
 
-## ✨ 功能特点
-
-- 🐦 **新推文通知** - 实时监控用户发布的新推文
-- 💬 **回复通知** - 监控用户的回复动态
-- 📌 **置顶推文通知** - 检测用户置顶推文的变化
-- 🔄 **转发通知** - 监控用户的转发行为
-- 📱 **Telegram通知** - 通过Telegram Bot实时推送通知
-- 🎯 **多用户监控** - 支持同时监控多个Twitter用户
-- ⚙️ **灵活配置** - 可自定义监控间隔和监控项目
-- 🎨 **简洁界面** - 响应式设计，支持移动端访问
-
-## 📋 前置要求
-
-1. **Node.js** - 版本 14.x 或更高
-2. **RapidAPI账号** - 用于访问Twitter API
-3. **Telegram Bot** - 用于发送通知
-
-## 🚀 一键安装（推荐）
-
-### CentOS/RHEL 一键安装
-
-在CentOS 7/8/9或RHEL系统上，使用以下命令一键安装：
+### 1. 克隆或下载项目
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/six8888-cpu/twitter-monitor/main/install.sh | sudo bash
+# 进入项目目录
+cd weibo-monitor
 ```
 
-或者分步执行：
+### 2. 安装依赖
 
 ```bash
-# 下载安装脚本
-wget https://raw.githubusercontent.com/six8888-cpu/twitter-monitor/main/install.sh
-
-# 添加执行权限
-chmod +x install.sh
-
-# 运行安装
-sudo bash install.sh
+pip install -r requirements.txt
 ```
 
-**安装脚本会自动完成以下操作：**
-- ✅ 更新系统包
-- ✅ 安装 Node.js 18.x
-- ✅ 安装 PM2 进程管理器
-- ✅ 克隆项目代码到 `/opt/twitter-monitor`
-- ✅ 安装项目依赖
-- ✅ 配置防火墙（开放3000端口）
-- ✅ 创建系统服务
-- ✅ 可选择立即启动服务
+### 3. 配置Telegram Bot
 
-**安装完成后：**
-- 访问 `http://你的服务器IP:3000` 打开Web界面
-- 按照界面提示配置API密钥
-- 开始添加监控用户
+#### 3.1 创建Telegram Bot
 
-**服务管理命令：**
-```bash
-# 启动服务
-systemctl start twitter-monitor
+1. 在Telegram中搜索 `@BotFather`
+2. 发送 `/newbot` 命令
+3. 按照提示设置Bot名称和用户名
+4. 创建成功后，BotFather会给你一个Token，类似：`1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`
+5. 保存这个Token
 
-# 停止服务
-systemctl stop twitter-monitor
+#### 3.2 获取Chat ID
 
-# 重启服务
-systemctl restart twitter-monitor
+1. 在Telegram中搜索 `@userinfobot`
+2. 点击开始（Start）
+3. Bot会返回你的用户信息，其中包含你的Chat ID
+4. 保存这个Chat ID（是一个数字，可能是正数或负数）
 
-# 查看状态
-systemctl status twitter-monitor
+**或者使用以下方法：**
 
-# 查看日志
-journalctl -u twitter-monitor -f
+1. 先给你的Bot发送任意一条消息
+2. 在浏览器中访问：`https://api.telegram.org/bot<你的BOT_TOKEN>/getUpdates`
+3. 在返回的JSON中找到 `"chat":{"id":123456789}` 的部分
+4. 这个id就是你的Chat ID
 
-# 设置开机自启
-systemctl enable twitter-monitor
+### 4. 配置程序
+
+编辑 `config.yaml` 文件：
+
+```yaml
+# 要监控的微博用户页面URL
+weibo_url: "https://weibo.com/u/2656274875"
+
+# 关键词列表（根据你的需求修改）
+keywords:
+  - "关键词1"
+  - "关键词2"
+  - "关键词3"
+
+# Telegram 配置
+telegram:
+  bot_token: "你的BOT_TOKEN"  # 替换为你的Token
+  chat_id: "你的CHAT_ID"      # 替换为你的Chat ID
+
+# 监控设置
+monitor:
+  check_interval: 5          # 检查间隔（分钟）
+  headless: true             # 是否使用无头模式
+  page_load_timeout: 30      # 页面加载超时时间（秒）
+  notified_file: "notified_weibo.txt"  # 已通知记录文件
 ```
 
-## 🚀 手动安装
+## 使用方法
 
-### 1. 安装依赖
-
-```bash
-npm install
-```
-
-### 2. 获取必要的API密钥
-
-#### RapidAPI Key
-1. 访问 [Twitter241 API](https://rapidapi.com/davethebeast/api/twitter241)
-2. 注册/登录RapidAPI账号
-3. 订阅API（有免费套餐）
-4. 复制你的RapidAPI Key
-
-#### Telegram Bot配置
-1. 在Telegram中找到 [@BotFather](https://t.me/BotFather)
-2. 发送 `/newbot` 创建新机器人
-3. 按提示设置机器人名称
-4. 保存Bot Token（格式类似：`123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`）
-
-#### 获取Telegram Chat ID
-1. 在Telegram中找到 [@userinfobot](https://t.me/userinfobot)
-2. 发送任意消息
-3. 机器人会返回你的Chat ID
-
-### 3. 启动服务器
+### 启动监控
 
 ```bash
-npm start
+python weibo_monitor.py
 ```
 
-或使用开发模式（自动重启）：
+### 后台运行（Linux/Mac）
 
 ```bash
-npm run dev
+nohup python weibo_monitor.py > output.log 2>&1 &
 ```
 
-### 4. 访问Web界面
+### 后台运行（Windows）
 
-打开浏览器访问：http://localhost:3000
+1. 创建一个批处理文件 `start_monitor.bat`：
 
-### 5. 配置系统
-
-1. 点击"**系统配置**"右侧的"**显示**"按钮
-2. 填入以下信息：
-   - RapidAPI Key
-   - Telegram Bot Token
-   - Telegram Chat ID
-   - 检查间隔（建议5-15分钟）
-3. 点击"**保存配置**"
-4. 点击"**测试Telegram**"验证配置是否正确
-
-### 6. 添加监控用户
-
-1. 在"**添加监控用户**"区域输入Twitter用户名（不含@）
-2. 点击"**添加**"按钮
-3. 在监控列表中可以选择监控项目：
-   - ✅ 启用监控
-   - 📝 新推文
-   - 💬 回复
-   - 📌 置顶
-   - 🔄 转发
-
-## 📁 项目结构
-
-```
-twitter-monitor/
-├── server.js           # 后端服务器
-├── package.json        # 项目配置
-├── README.md          # 说明文档
-├── public/            # 前端文件
-│   ├── index.html     # 主页面
-│   ├── style.css      # 样式文件
-│   └── script.js      # 前端逻辑
-└── data/              # 数据存储（自动创建）
-    ├── config.json    # 系统配置
-    ├── monitored_users.json  # 监控用户列表
-    └── cache.json     # 数据缓存
+```batch
+@echo off
+pythonw weibo_monitor.py
 ```
 
-## 🔧 配置说明
+2. 双击运行，或者添加到开机启动项
 
-### 检查间隔
-- 建议设置为 5-15 分钟
-- 间隔太短可能触发API限制
-- 间隔太长可能错过实时动态
+### 停止监控
 
-### 监控选项
-每个用户可以独立配置以下监控项：
-- **启用监控**：总开关
-- **新推文**：监控用户发布的新推文
-- **回复**：监控用户的回复内容
-- **置顶**：监控置顶推文的变化
-- **转发**：监控用户转发的推文
-
-## 📱 Telegram通知格式
-
-### 新推文通知
-```
-🐦 新推文通知
-
-👤 用户: @username
-📝 内容: 推文内容...
-🔗 链接: https://twitter.com/...
-⏰ 时间: 2024-01-01 12:00:00
-```
-
-### 回复通知
-```
-💬 新回复通知
-
-👤 用户: @username
-📝 回复内容: 回复内容...
-🔗 链接: https://twitter.com/...
-⏰ 时间: 2024-01-01 12:00:00
-```
-
-### 置顶推文通知
-```
-📌 置顶推文变化通知
-
-👤 用户: @username
-🔗 新置顶推文: https://twitter.com/...
-⏰ 检测时间: 2024-01-01 12:00:00
-```
-
-### 转发通知
-```
-🔄 转发推文通知
-
-👤 用户: @username
-📝 转发了: @original_user
-💭 原文: 原推文内容...
-🔗 链接: https://twitter.com/...
-⏰ 时间: 2024-01-01 12:00:00
-```
-
-## ⚠️ 注意事项
-
-1. **API限制**
-   - RapidAPI的免费套餐有请求次数限制
-   - 建议合理设置检查间隔
-   - 监控用户不宜过多
-
-2. **数据安全**
-   - API密钥等敏感信息存储在本地
-   - 建议不要将 `data/` 目录提交到版本控制
-   - 定期备份 `data/` 目录
-
-3. **首次运行**
-   - 首次添加用户后，系统会初始化缓存
-   - 初始化期间不会发送通知
-   - 从第二次检查开始才会发送新动态通知
-
-4. **服务器运行**
-   - 需要保持服务器持续运行
-   - 建议使用 PM2 或 systemd 管理进程
-   - 可部署到云服务器实现24小时监控
-
-## 🛠️ 高级部署
-
-### 使用 PM2 部署（推荐）
+- 前台运行：按 `Ctrl+C`
+- 后台运行：找到进程并终止
 
 ```bash
-# 安装 PM2
-npm install -g pm2
+# Linux/Mac
+ps aux | grep weibo_monitor.py
+kill <PID>
 
-# 启动应用
-pm2 start server.js --name twitter-monitor
-
-# 设置开机自启
-pm2 startup
-pm2 save
-
-# 查看日志
-pm2 logs twitter-monitor
-
-# 重启应用
-pm2 restart twitter-monitor
+# Windows
+tasklist | findstr python
+taskkill /PID <PID> /F
 ```
 
-### 使用 Docker 部署
+## 配置说明
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
+### 关键词设置
+
+在 `config.yaml` 中的 `keywords` 部分添加你想监控的关键词：
+
+```yaml
+keywords:
+  - "重要通知"
+  - "紧急"
+  - "特别提醒"
+  - "限时"
 ```
 
-```bash
-# 构建镜像
-docker build -t twitter-monitor .
+- 支持中文、英文、数字、符号
+- 大小写敏感
+- 只要微博内容包含任意一个关键词就会触发通知
 
-# 运行容器
-docker run -d -p 3000:3000 -v $(pwd)/data:/app/data twitter-monitor
+### 监控频率
+
+```yaml
+monitor:
+  check_interval: 5  # 每5分钟检查一次
 ```
 
-## 🐛 故障排除
+- 建议设置为 3-10 分钟
+- 不建议设置太频繁，以免被微博限制
+- 根据实际需求调整
 
-### Telegram消息发送失败
-- 检查Bot Token是否正确
-- 检查Chat ID是否正确
-- 确认已向Bot发送过消息（激活对话）
+### 无头模式
 
-### API调用失败
-- 检查RapidAPI Key是否正确
-- 确认API订阅状态
-- 检查是否超出API配额
+```yaml
+monitor:
+  headless: true  # true: 后台运行不显示浏览器窗口
+                  # false: 显示浏览器窗口（用于调试）
+```
 
-### 用户添加失败
-- 确认用户名拼写正确
-- 检查API配置是否正确
-- 查看服务器日志获取详细错误信息
+## 日志文件
 
-## 📄 License
+程序运行时会生成以下文件：
+
+- `weibo_monitor.log` - 运行日志
+- `notified_weibo.txt` - 已通知的微博ID记录
+
+## 常见问题
+
+### 1. Chrome浏览器版本不匹配
+
+**错误信息：** `SessionNotCreatedException: Message: session not created`
+
+**解决方法：**
+- 更新Chrome浏览器到最新版本
+- 或者指定ChromeDriver版本
+
+### 2. 无法访问微博
+
+**可能原因：**
+- 网络连接问题
+- 微博反爬机制
+- 页面结构变化
+
+**解决方法：**
+- 检查网络连接
+- 增加 `page_load_timeout` 时间
+- 关闭无头模式查看实际页面情况
+
+### 3. Telegram通知发送失败
+
+**检查项：**
+- Bot Token是否正确
+- Chat ID是否正确
+- 是否已经给Bot发送过消息（激活Bot）
+- 网络是否能访问Telegram
+
+### 4. 未检测到关键词
+
+**检查项：**
+- 关键词拼写是否正确
+- 是否区分大小写
+- 微博内容是否真的包含关键词
+- 查看日志文件确认是否正确获取到微博内容
+
+## 技术说明
+
+### 反爬机制应对
+
+程序使用了以下技术来应对微博的反爬机制：
+
+1. **undetected-chromedriver** - 隐藏Selenium自动化特征
+2. **浏览器指纹伪装** - 设置真实的User-Agent
+3. **随机延迟** - 模拟人类浏览行为
+4. **无头模式** - 减少资源消耗
+
+### 数据提取
+
+- 使用Selenium加载动态内容
+- BeautifulSoup解析HTML
+- 多种选择器兼容不同页面结构
+
+## 注意事项
+
+1. **合规使用**：请遵守微博的使用条款，不要过度频繁地访问
+2. **个人用途**：本程序仅供个人学习和使用
+3. **隐私保护**：不要分享你的Bot Token和Chat ID
+4. **适度监控**：建议监控间隔不要小于3分钟
+
+## 更新日志
+
+### v1.0.0 (2025-12-01)
+- 首次发布
+- 支持微博关键词监控
+- Telegram通知功能
+- 反爬机制应对
+
+## 许可证
 
 MIT License
 
-## 🤝 贡献
+## 技术支持
 
-欢迎提交 Issue 和 Pull Request！
-
-## 📧 联系方式
-
-如有问题或建议，欢迎反馈。
+如有问题，请检查日志文件 `weibo_monitor.log` 查看详细错误信息。
 
 ---
 
-**享受你的Twitter监控体验！** 🎉
-
+**免责声明**：本工具仅供学习交流使用，使用者需自行承担使用风险。

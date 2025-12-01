@@ -1,35 +1,39 @@
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# 数据文件（包含敏感信息）
-data/
-
-# 环境变量
-.env
-.env.local
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
 
 # 日志文件
-logs/
 *.log
 
-# 操作系统
-.DS_Store
-Thumbs.db
+# 配置文件（可能包含敏感信息）
+config.yaml
+
+# 通知记录
+notified_weibo.txt
+
+# 临时文件
+*.tmp
+*.html
+*.htm
+
+# Chrome驱动
+chromedriver*
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# PM2
-.pm2/
-
-# 临时文件
-tmp/
-temp/
-
+# 系统文件
+.DS_Store
+Thumbs.db

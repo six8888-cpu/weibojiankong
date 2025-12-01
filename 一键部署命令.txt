@@ -1,0 +1,117 @@
+# ========================================
+# 微博监控系统 - 香港服务器一键部署命令
+# ========================================
+
+# 第一步：登录服务器并下载代码
+# ========================================
+ssh root@你的服务器IP
+
+cd /opt
+
+# 方式1：使用Git（推荐）
+git clone <仓库地址> weibo-monitor
+
+# 方式2：使用wget下载压缩包
+wget <压缩包地址>
+unzip weibo-monitor.zip
+
+cd weibo-monitor
+
+
+# 第二步：运行一键安装脚本
+# ========================================
+chmod +x install.sh
+./install.sh
+
+# 等待安装完成（约5-10分钟）
+# 脚本会自动安装：Python3、Chrome、依赖包、创建服务
+
+
+# 第三步：配置Telegram
+# ========================================
+
+# 1. 获取Telegram Bot Token
+# - Telegram搜索：@BotFather
+# - 发送：/newbot
+# - 获取Token
+
+# 2. 获取Chat ID
+# - Telegram搜索：@userinfobot
+# - 点击Start
+# - 获取ID
+
+# 3. 编辑配置文件
+nano config.yaml
+
+# 修改以下内容：
+# telegram:
+#   bot_token: "你的TOKEN"
+#   chat_id: "你的CHAT_ID"
+
+
+# 第四步：启动服务
+# ========================================
+
+# 启动服务
+sudo systemctl start weibo-monitor
+
+# 设置开机自启
+sudo systemctl enable weibo-monitor
+
+# 查看状态
+sudo systemctl status weibo-monitor
+
+
+# 第五步：开放防火墙端口
+# ========================================
+
+# Ubuntu/Debian:
+sudo ufw allow 5000
+sudo ufw reload
+
+# CentOS:
+sudo firewall-cmd --add-port=5000/tcp --permanent
+sudo firewall-cmd --reload
+
+# ⚠️ 重要：还需要在云服务器控制台的安全组中开放5000端口
+
+
+# 第六步：访问Web界面
+# ========================================
+# 浏览器打开：
+# http://你的服务器IP:5000
+
+# 在Web界面中：
+# 1. 添加关键词
+# 2. 点击"启动监控"
+# 3. 测试Telegram连接
+
+
+# ========================================
+# 常用管理命令
+# ========================================
+
+# 查看服务状态
+sudo systemctl status weibo-monitor
+
+# 查看实时日志
+sudo journalctl -u weibo-monitor -f
+
+# 重启服务
+sudo systemctl restart weibo-monitor
+
+# 停止服务
+sudo systemctl stop weibo-monitor
+
+# 手动启动（调试用）
+cd /opt/weibo-monitor
+source venv/bin/activate
+python web_server.py
+
+
+# ========================================
+# 完成！
+# ========================================
+# 系统已开始监控，发现关键词会自动发送Telegram通知
+# Web管理界面：http://你的服务器IP:5000
+
