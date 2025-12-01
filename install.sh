@@ -159,6 +159,6 @@ echo "启动方法："
 echo "1. 手动启动: ./start.sh"
 echo "2. systemd服务: sudo systemctl start web-monitor"
 echo ""
-echo "访问地址: http://localhost:5000"
+echo "访问地址: http://localhost:9527"
 echo ""
 

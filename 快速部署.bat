@@ -123,7 +123,7 @@ echo ================================
 echo ✅ 部署完成！
 echo ================================
 echo.
-echo 🌐 访问地址: http://%SERVER_IP%:5000
+echo 🌐 访问地址: http://%SERVER_IP%:9527
 echo.
 echo 📝 后续操作：
 echo 1. 访问Web界面

@@ -16,7 +16,7 @@
    ```
 
 3. **访问界面**
-   - 打开浏览器访问：http://localhost:5000
+   - 打开浏览器访问：http://localhost:9527
 
 ### Linux用户
 

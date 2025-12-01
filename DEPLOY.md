@@ -48,19 +48,19 @@ sudo systemctl enable web-monitor
 
 ```bash
 # UFW防火墙
-sudo ufw allow 5000/tcp
+sudo ufw allow 9527/tcp
 
 # firewalld防火墙
-sudo firewall-cmd --permanent --add-port=5000/tcp
+sudo firewall-cmd --permanent --add-port=9527/tcp
 sudo firewall-cmd --reload
 
 # iptables
-sudo iptables -A INPUT -p tcp --dport 5000 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 9527 -j ACCEPT
 ```
 
 ### 6. 访问服务
 
-在浏览器中访问：`http://服务器IP:5000`
+在浏览器中访问：`http://服务器IP:9527`
 
 ## 🔒 使用Nginx反向代理
 
@@ -85,7 +85,7 @@ server {
     server_name your-domain.com;  # 修改为你的域名
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:9527;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -141,7 +141,7 @@ RUN playwright install-deps chromium
 COPY . .
 
 # 暴露端口
-EXPOSE 5000
+EXPOSE 9527
 
 # 启动应用
 CMD ["python", "app.py"]
@@ -156,14 +156,14 @@ services:
   web-monitor:
     build: .
     ports:
-      - "5000:5000"
+      - "9527:9527"
     volumes:
       - ./monitor.db:/app/monitor.db
       - ./monitor.log:/app/monitor.log
     restart: always
     environment:
       - FLASK_HOST=0.0.0.0
-      - FLASK_PORT=5000
+      - FLASK_PORT=9527
 ```
 
 ### 3. 构建并运行
@@ -216,14 +216,14 @@ cp /opt/web-monitor/monitor.db /backup/monitor.db.$(date +%Y%m%d)
 pip install gunicorn
 
 # 启动（4个工作进程）
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:9527 app:app
 ```
 
 修改systemd服务文件：
 
 ```ini
 [Service]
-ExecStart=/opt/web-monitor/venv/bin/gunicorn -w 4 -b 0.0.0.0:5000 app:app
+ExecStart=/opt/web-monitor/venv/bin/gunicorn -w 4 -b 0.0.0.0:9527 app:app
 ```
 
 ### 2. 调整监控频率
@@ -245,7 +245,7 @@ sqlite3 monitor.db "VACUUM;"
 ## 🔐 安全建议
 
 1. **修改默认端口**
-   - 在`.env`中设置非5000端口
+   - 在`.env`中设置非9527端口
 
 2. **使用防火墙**
    - 只开放必要的端口
@@ -289,7 +289,7 @@ sudo systemctl status web-monitor
 sudo journalctl -u web-monitor -n 50
 
 # 检查端口占用
-sudo netstat -tlnp | grep 5000
+sudo netstat -tlnp | grep 9527
 
 # 手动启动测试
 cd /opt/web-monitor

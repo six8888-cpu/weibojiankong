@@ -129,7 +129,7 @@ chmod +x start.sh
 
 ### 2. 访问Web界面
 
-打开浏览器访问：http://localhost:5000
+打开浏览器访问：http://localhost:9527
 
 ### 3. 配置Telegram通知（发送到群组）
 

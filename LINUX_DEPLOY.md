@@ -45,17 +45,17 @@ sudo systemctl status web-monitor
 ### 4️⃣ 配置防火墙
 
 ```bash
-# 开放5000端口
-sudo ufw allow 5000/tcp
+# 开放9527端口
+sudo ufw allow 9527/tcp
 # 或
-sudo firewall-cmd --permanent --add-port=5000/tcp
+sudo firewall-cmd --permanent --add-port=9527/tcp
 sudo firewall-cmd --reload
 ```
 
 ### 5️⃣ 访问Web界面
 
 ```
-http://your-server-ip:5000
+http://your-server-ip:9527
 ```
 
 ---
@@ -187,8 +187,8 @@ cd /opt/web-monitor
 # 检查防火墙状态
 sudo ufw status
 
-# 开放5000端口
-sudo ufw allow 5000/tcp
+# 开放9527端口
+sudo ufw allow 9527/tcp
 
 # 如果防火墙未启用
 sudo ufw enable
@@ -200,8 +200,8 @@ sudo ufw enable
 # 检查防火墙状态
 sudo firewall-cmd --state
 
-# 开放5000端口
-sudo firewall-cmd --permanent --add-port=5000/tcp
+# 开放9527端口
+sudo firewall-cmd --permanent --add-port=9527/tcp
 sudo firewall-cmd --reload
 
 # 查看开放的端口
@@ -213,7 +213,7 @@ sudo firewall-cmd --list-ports
 如果使用阿里云、腾讯云、AWS等，还需要在控制台配置安全组规则：
 - 添加入站规则
 - 协议：TCP
-- 端口：5000
+- 端口：9527
 - 来源：0.0.0.0/0（或指定IP）
 
 ### 六、验证部署
@@ -223,12 +223,12 @@ sudo firewall-cmd --list-ports
 ps aux | grep python
 
 # 检查端口是否监听
-netstat -tlnp | grep 5000
+netstat -tlnp | grep 9527
 # 或
-ss -tlnp | grep 5000
+ss -tlnp | grep 9527
 
 # 测试本地访问
-curl http://localhost:5000
+curl http://localhost:9527
 
 # 查看日志
 tail -f /opt/web-monitor/monitor.log
@@ -238,7 +238,7 @@ tail -f /opt/web-monitor/monitor.log
 
 在浏览器中访问：
 ```
-http://your-server-ip:5000
+http://your-server-ip:9527
 ```
 
 你应该能看到熟悉的监控界面，之前的配置需要重新添加。
@@ -270,7 +270,7 @@ server {
     server_name your-domain.com;  # 改成你的域名或IP
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:9527;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -386,8 +386,8 @@ python app.py
 ### 端口被占用
 
 ```bash
-# 查看占用5000端口的进程
-sudo lsof -i :5000
+# 查看占用9527端口的进程
+sudo lsof -i :9527
 
 # 杀死进程
 sudo kill -9 <PID>
@@ -423,14 +423,14 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 sudo systemctl status web-monitor
 
 # 检查端口
-sudo netstat -tlnp | grep 5000
+sudo netstat -tlnp | grep 9527
 
 # 检查防火墙
 sudo ufw status
 sudo firewall-cmd --list-ports
 
 # 测试本地访问
-curl http://localhost:5000
+curl http://localhost:9527
 ```
 
 ---
@@ -445,7 +445,7 @@ source venv/bin/activate
 pip install gunicorn
 
 # 启动（4个工作进程）
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:9527 app:app
 ```
 
 修改systemd服务文件：
@@ -455,7 +455,7 @@ sudo nano /etc/systemd/system/web-monitor.service
 
 修改 `ExecStart` 行：
 ```ini
-ExecStart=/opt/web-monitor/venv/bin/gunicorn -w 4 -b 0.0.0.0:5000 app:app
+ExecStart=/opt/web-monitor/venv/bin/gunicorn -w 4 -b 0.0.0.0:9527 app:app
 ```
 
 ```bash
@@ -533,7 +533,7 @@ cp /opt/web-monitor/monitor.db ~/monitor_backup_$(date +%Y%m%d).db
 完成以上步骤后，你的网页监控系统就成功部署到Linux服务器了！
 
 **下一步：**
-1. 访问 `http://your-server-ip:5000`
+1. 访问 `http://your-server-ip:9527`
 2. 重新配置Telegram
 3. 添加监控网址和关键词
 4. 启动监控任务

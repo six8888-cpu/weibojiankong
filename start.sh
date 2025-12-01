@@ -43,7 +43,7 @@ echo "================================"
 echo "启动监控系统..."
 echo "================================"
 echo ""
-echo "Web界面地址: http://localhost:5000"
+echo "Web界面地址: http://localhost:9527"
 echo "按 Ctrl+C 停止服务"
 echo ""
 

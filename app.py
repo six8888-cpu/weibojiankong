@@ -334,5 +334,5 @@ if __name__ == '__main__':
     
     # 启动Flask应用
     logger.info("启动Web服务器...")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=9527, debug=False)
 
