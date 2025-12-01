@@ -48,8 +48,18 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✓ Python依赖已安装${NC}"
 
-# 安装Playwright浏览器（使用国内镜像）
-echo -e "${YELLOW}[5/8] 安装Playwright浏览器...${NC}"
+# 安装Playwright系统依赖（CentOS）
+echo -e "${YELLOW}[5/9] 安装Playwright系统依赖...${NC}"
+if command -v yum &> /dev/null; then
+    sudo yum install -y nss nspr atk at-spi2-atk cups-libs libdrm libXcomposite libXdamage libXext libXfixes libXrandr libgbm pango cairo alsa-lib libxcb libxkbcommon libX11 2>/dev/null
+    echo -e "${GREEN}✓ 系统依赖已安装${NC}"
+elif command -v apt &> /dev/null; then
+    sudo apt-get install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcb1 libxkbcommon0 libatspi2.0-0 libx11-6 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2 2>/dev/null
+    echo -e "${GREEN}✓ 系统依赖已安装${NC}"
+fi
+
+# 安装Playwright浏览器
+echo -e "${YELLOW}[6/9] 安装Playwright浏览器...${NC}"
 echo "提示：如果下载速度慢，请配置代理环境变量 HTTP_PROXY 和 HTTPS_PROXY"
 python -m playwright install chromium
 
@@ -58,7 +68,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 初始化数据库
-echo -e "${YELLOW}[6/8] 初始化数据库...${NC}"
+echo -e "${YELLOW}[7/9] 初始化数据库...${NC}"
 python -c "from database import Database; db = Database(); db.init_db()"
 echo -e "${GREEN}✓ 数据库已初始化${NC}"
 
@@ -66,7 +76,7 @@ echo -e "${GREEN}✓ 数据库已初始化${NC}"
 deactivate
 
 # 创建启动脚本
-echo -e "${YELLOW}[7/8] 创建启动脚本...${NC}"
+echo -e "${YELLOW}[8/9] 创建启动脚本...${NC}"
 cat > start.sh << 'STARTEOF'
 #!/bin/bash
 cd "$(dirname "$0")"
@@ -114,7 +124,7 @@ chmod +x start_production.sh
 echo -e "${GREEN}✓ 启动脚本已创建${NC}"
 
 # 创建systemd服务文件
-echo -e "${YELLOW}[8/8] 创建systemd服务（可选）...${NC}"
+echo -e "${YELLOW}[9/9] 创建systemd服务（可选）...${NC}"
 cat > /tmp/webmonitor.service << EOF
 [Unit]
 Description=Web Monitor Service
