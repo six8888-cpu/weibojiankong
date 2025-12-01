@@ -600,36 +600,58 @@ app.post('/api/users', async (req, res) => {
         // 获取用户信息
         const userData = await getUserByUsername(username);
         
-        console.log(`获取用户信息结果:`, JSON.stringify(userData, null, 2));
+        console.log(`\n========== API响应详情 ==========`);
+        console.log(`完整响应:`, JSON.stringify(userData, null, 2));
+        console.log(`响应顶层键:`, Object.keys(userData || {}));
+        console.log(`================================\n`);
         
         if (!userData) {
             return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
         // 从 about-account API 响应中提取 rest_id
-        // 尝试多种可能的数据结构
-        let userId = null;
+        // 递归查找 rest_id 的函数
+        function findRestId(obj, path = '') {
+            if (!obj || typeof obj !== 'object') return null;
+            
+            // 直接检查当前对象
+            if (obj.rest_id) {
+                console.log(`✅ 找到 rest_id 在路径: ${path}.rest_id`);
+                return String(obj.rest_id);
+            }
+            
+            // 检查常见的别名
+            if (obj.id_str) {
+                console.log(`✅ 找到 id_str 在路径: ${path}.id_str`);
+                return String(obj.id_str);
+            }
+            
+            if (obj.id && typeof obj.id === 'string') {
+                console.log(`✅ 找到 id 在路径: ${path}.id`);
+                return String(obj.id);
+            }
+            
+            // 递归搜索
+            for (const key of Object.keys(obj)) {
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    const found = findRestId(obj[key], path ? `${path}.${key}` : key);
+                    if (found) return found;
+                }
+            }
+            
+            return null;
+        }
         
-        if (userData.rest_id) {
-            // 直接在顶层
-            userId = String(userData.rest_id);
-            console.log(`✅ 从 userData.rest_id 获取ID: ${userId}`);
-        } else if (userData.result?.rest_id) {
-            // 在 result 对象中
-            userId = String(userData.result.rest_id);
-            console.log(`✅ 从 userData.result.rest_id 获取ID: ${userId}`);
-        } else if (userData.data?.rest_id) {
-            // 在 data 对象中
-            userId = String(userData.data.rest_id);
-            console.log(`✅ 从 userData.data.rest_id 获取ID: ${userId}`);
-        } else if (userData.user?.id_str) {
-            // 其他可能的格式
-            userId = String(userData.user.id_str);
-            console.log(`✅ 从 userData.user.id_str 获取ID: ${userId}`);
-        } else {
-            console.error(`❌ 无法从响应中提取 rest_id`);
-            console.error(`响应结构:`, Object.keys(userData));
-            return res.status(500).json({ success: false, message: '无法获取用户ID，API响应格式异常' });
+        const userId = findRestId(userData);
+        
+        if (!userId) {
+            console.error(`❌ 无法从响应中提取用户ID`);
+            console.error(`已尝试的路径: rest_id, id_str, id`);
+            console.error(`响应的完整结构:`, JSON.stringify(userData).substring(0, 500));
+            return res.status(500).json({ 
+                success: false, 
+                message: '无法获取用户ID，API响应格式异常。请查看服务器日志获取详细信息。' 
+            });
         }
         
         console.log(`用户 @${username} 的ID: ${userId} (类型: ${typeof userId})`);
