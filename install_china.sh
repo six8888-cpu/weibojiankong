@@ -1,5 +1,5 @@
 #!/bin/bash
-# 中国服务器一键安装脚本
+# 中国服务器一键安装脚本（使用虚拟环境）
 
 echo "======================================"
 echo "  网页监控系统 - 中国服务器安装脚本  "
@@ -12,33 +12,35 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 检查Python版本
-echo -e "${YELLOW}[1/7] 检查Python环境...${NC}"
+echo -e "${YELLOW}[1/8] 检查Python环境...${NC}"
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}错误：未找到Python3，请先安装Python 3.8+${NC}"
-    exit 1
+    echo -e "${RED}错误：未找到Python3，正在安装...${NC}"
+    sudo yum install -y python3 python3-pip
 fi
 
 PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
 echo -e "${GREEN}✓ Python版本: $PYTHON_VERSION${NC}"
 
-# 安装pip
-echo -e "${YELLOW}[2/7] 检查pip...${NC}"
-if ! command -v pip3 &> /dev/null; then
-    echo "正在安装pip..."
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    python3 get-pip.py
-    rm get-pip.py
+# 创建虚拟环境
+echo -e "${YELLOW}[2/8] 创建Python虚拟环境...${NC}"
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+    echo -e "${GREEN}✓ 虚拟环境创建成功${NC}"
+else
+    echo -e "${GREEN}✓ 虚拟环境已存在${NC}"
 fi
-echo -e "${GREEN}✓ pip已安装${NC}"
+
+# 激活虚拟环境
+source venv/bin/activate
 
 # 升级pip（使用国内镜像）
-echo -e "${YELLOW}[3/7] 升级pip（使用阿里云镜像）...${NC}"
-pip3 install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --quiet
+echo -e "${YELLOW}[3/8] 升级pip（使用阿里云镜像）...${NC}"
+pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --quiet
 
 # 安装依赖
-echo -e "${YELLOW}[4/7] 安装Python依赖（使用阿里云镜像）...${NC}"
+echo -e "${YELLOW}[4/8] 安装Python依赖（使用阿里云镜像）...${NC}"
 echo "这可能需要几分钟时间，请耐心等待..."
-pip3 install -r requirements_china.txt -i https://mirrors.aliyun.com/pypi/simple/ --quiet
+pip install -r requirements_china.txt -i https://mirrors.aliyun.com/pypi/simple/
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}错误：依赖安装失败${NC}"
@@ -47,21 +49,72 @@ fi
 echo -e "${GREEN}✓ Python依赖已安装${NC}"
 
 # 安装Playwright浏览器（使用国内镜像）
-echo -e "${YELLOW}[5/7] 安装Playwright浏览器...${NC}"
+echo -e "${YELLOW}[5/8] 安装Playwright浏览器...${NC}"
 echo "提示：如果下载速度慢，请配置代理环境变量 HTTP_PROXY 和 HTTPS_PROXY"
-python3 -m playwright install chromium
+python -m playwright install chromium
 
 if [ $? -ne 0 ]; then
     echo -e "${YELLOW}警告：Playwright浏览器安装可能失败，如需使用反爬功能请手动安装${NC}"
 fi
 
 # 初始化数据库
-echo -e "${YELLOW}[6/7] 初始化数据库...${NC}"
-python3 -c "from database import Database; db = Database(); db.init_db()"
+echo -e "${YELLOW}[6/8] 初始化数据库...${NC}"
+python -c "from database import Database; db = Database(); db.init_db()"
 echo -e "${GREEN}✓ 数据库已初始化${NC}"
 
+# 退出虚拟环境
+deactivate
+
+# 创建启动脚本
+echo -e "${YELLOW}[7/8] 创建启动脚本...${NC}"
+cat > start.sh << 'STARTEOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+source venv/bin/activate
+python app.py
+STARTEOF
+
+chmod +x start.sh
+
+cat > start_production.sh << 'PRODEOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+source venv/bin/activate
+
+if ! command -v gunicorn &> /dev/null; then
+    echo "安装gunicorn..."
+    pip install gunicorn -i https://mirrors.aliyun.com/pypi/simple/
+fi
+
+mkdir -p logs
+
+gunicorn app:app \
+    --bind 0.0.0.0:9527 \
+    --workers 2 \
+    --threads 4 \
+    --timeout 120 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --graceful-timeout 30 \
+    --worker-class sync \
+    --access-logfile logs/access.log \
+    --error-logfile logs/error.log \
+    --log-level info \
+    --pid /tmp/webmonitor.pid \
+    --daemon
+
+if [ $? -eq 0 ]; then
+    echo "✓ 服务已启动（后台运行）"
+    echo "  访问地址：http://服务器IP:9527"
+    echo "停止服务：kill \$(cat /tmp/webmonitor.pid)"
+fi
+PRODEOF
+
+chmod +x start_production.sh
+echo -e "${GREEN}✓ 启动脚本已创建${NC}"
+
 # 创建systemd服务文件
-echo -e "${YELLOW}[7/7] 创建systemd服务（可选）...${NC}"
+echo -e "${YELLOW}[8/8] 创建systemd服务（可选）...${NC}"
 cat > /tmp/webmonitor.service << EOF
 [Unit]
 Description=Web Monitor Service
@@ -72,7 +125,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$(pwd)
 Environment="PATH=$(pwd)/venv/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=$(which python3) $(pwd)/app.py
+ExecStart=$(pwd)/venv/bin/python $(pwd)/app.py
 Restart=always
 RestartSec=10
 
@@ -102,8 +155,8 @@ echo "       安装完成！"
 echo "======================================${NC}"
 echo ""
 echo "启动方式："
-echo "  1. 直接启动：./start.sh"
-echo "  2. 后台运行：nohup python3 app.py > monitor.log 2>&1 &"
+echo "  1. 开发模式：./start.sh"
+echo "  2. 生产模式：./start_production.sh"
 echo "  3. 系统服务：sudo systemctl start webmonitor"
 echo ""
 echo "访问地址：http://服务器IP:9527"
