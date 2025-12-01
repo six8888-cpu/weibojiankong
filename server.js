@@ -118,11 +118,20 @@ async function callTwitterAPI(endpoint, params = {}) {
     console.log(`   参数:`, JSON.stringify(params));
 
     try {
+        // 确保用户ID是字符串格式（API要求）
+        const processedParams = { ...params };
+        if (processedParams.user) {
+            processedParams.user = String(processedParams.user);
+        }
+        if (processedParams.pid) {
+            processedParams.pid = String(processedParams.pid);
+        }
+        
         const response = await axios.get(`https://twitter241.p.rapidapi.com/${endpoint}`, {
-            params: params,
+            params: processedParams,
             headers: {
-                'X-RapidAPI-Key': config.rapidApiKey,
-                'X-RapidAPI-Host': 'twitter241.p.rapidapi.com'
+                'x-rapidapi-key': config.rapidApiKey,
+                'x-rapidapi-host': 'twitter241.p.rapidapi.com'
             },
             timeout: 15000
         });
@@ -176,17 +185,46 @@ async function checkNewTweets(user) {
         
         const tweets = await getUserTweets(user.userId, 20);
         
-        if (!tweets || !tweets.result || !tweets.result.timeline || !tweets.result.timeline.instructions) {
+        // 调试：打印响应结构
+        if (tweets) {
+            console.log(`📦 API响应结构:`, JSON.stringify(Object.keys(tweets)).substring(0, 200));
+            if (tweets.result) {
+                console.log(`📦 result结构:`, JSON.stringify(Object.keys(tweets.result)).substring(0, 200));
+            }
+        }
+        
+        // 尝试多种可能的响应结构
+        let entries = [];
+        if (tweets?.result?.timeline?.instructions) {
+            // 标准结构
+            entries = tweets.result.timeline.instructions
+                .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        } else if (tweets?.result?.entries) {
+            // 直接entries结构
+            entries = tweets.result.entries;
+        } else if (tweets?.entries) {
+            // 顶层entries结构
+            entries = tweets.entries;
+        } else if (Array.isArray(tweets)) {
+            // 数组结构
+            entries = tweets;
+        } else {
+            console.warn(`⚠️  无法解析API响应结构，响应:`, JSON.stringify(tweets).substring(0, 500));
             return;
         }
 
         // 解析推文数据
-        const entries = tweets.result.timeline.instructions
-            .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        const tweetEntries = entries.filter(e => {
+            const entryId = e.entryId || e.id || e.tweet_id || '';
+            return String(entryId).startsWith('tweet-') || String(entryId).includes('tweet');
+        });
         
-        const tweetEntries = entries.filter(e => e.entryId.startsWith('tweet-'));
+        console.log(`📊 找到 ${tweetEntries.length} 条推文条目`);
         
-        if (tweetEntries.length === 0) return;
+        if (tweetEntries.length === 0) {
+            console.log(`⚠️  没有找到推文条目，可能API返回格式不同`);
+            return;
+        }
 
         // 初始化缓存
         if (!userCache.lastTweetId) {
@@ -233,20 +271,35 @@ async function checkNewTweets(user) {
 // 检查推文回复
 async function checkNewReplies(user) {
     try {
+        console.log(`🔍 开始检查新回复 - 用户: @${user.username}, ID: ${user.userId}`);
         const cache = getCache();
         const userCache = cache[user.userId] || {};
         
         const replies = await getUserReplies(user.userId, 20);
         
-        if (!replies || !replies.result || !replies.result.timeline || !replies.result.timeline.instructions) {
+        // 尝试多种可能的响应结构
+        let entries = [];
+        if (replies?.result?.timeline?.instructions) {
+            entries = replies.result.timeline.instructions
+                .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        } else if (replies?.result?.entries) {
+            entries = replies.result.entries;
+        } else if (replies?.entries) {
+            entries = replies.entries;
+        } else if (Array.isArray(replies)) {
+            entries = replies;
+        } else {
+            console.warn(`⚠️  无法解析回复API响应结构`);
             return;
         }
 
         // 解析回复数据
-        const entries = replies.result.timeline.instructions
-            .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        const replyEntries = entries.filter(e => {
+            const entryId = e.entryId || e.id || e.tweet_id || '';
+            return String(entryId).startsWith('tweet-') || String(entryId).includes('tweet');
+        });
         
-        const replyEntries = entries.filter(e => e.entryId.startsWith('tweet-'));
+        console.log(`📊 找到 ${replyEntries.length} 条回复条目`);
         
         if (replyEntries.length === 0) return;
 
@@ -338,20 +391,33 @@ async function checkPinnedTweet(user) {
 // 检查转发推文
 async function checkRetweets(user) {
     try {
+        console.log(`🔍 开始检查转发 - 用户: @${user.username}, ID: ${user.userId}`);
         const cache = getCache();
         const userCache = cache[user.userId] || {};
         
         const tweets = await getUserTweets(user.userId, 20);
         
-        if (!tweets || !tweets.result || !tweets.result.timeline || !tweets.result.timeline.instructions) {
+        // 尝试多种可能的响应结构
+        let entries = [];
+        if (tweets?.result?.timeline?.instructions) {
+            entries = tweets.result.timeline.instructions
+                .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        } else if (tweets?.result?.entries) {
+            entries = tweets.result.entries;
+        } else if (tweets?.entries) {
+            entries = tweets.entries;
+        } else if (Array.isArray(tweets)) {
+            entries = tweets;
+        } else {
+            console.warn(`⚠️  无法解析转发API响应结构`);
             return;
         }
 
         // 解析推文数据
-        const entries = tweets.result.timeline.instructions
-            .find(i => i.type === 'TimelineAddEntries')?.entries || [];
-        
-        const tweetEntries = entries.filter(e => e.entryId.startsWith('tweet-'));
+        const tweetEntries = entries.filter(e => {
+            const entryId = e.entryId || e.id || e.tweet_id || '';
+            return String(entryId).startsWith('tweet-') || String(entryId).includes('tweet');
+        });
         
         if (!userCache.checkedRetweets) {
             userCache.checkedRetweets = {};
@@ -522,19 +588,20 @@ app.post('/api/users', async (req, res) => {
             return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
-        const userId = userData.result.rest_id;
+        // 确保用户ID是字符串格式（API要求）
+        const userId = String(userData.result.rest_id);
         console.log(`用户 @${username} 的ID: ${userId} (类型: ${typeof userId})`);
         
         const users = getMonitoredUsers();
         
-        // 检查是否已存在
-        if (users.find(u => u.userId === userId)) {
+        // 检查是否已存在（使用字符串比较）
+        if (users.find(u => String(u.userId) === userId)) {
             return res.status(400).json({ success: false, message: '该用户已在监控列表中' });
         }
         
-        // 添加用户
+        // 添加用户（确保userId是字符串）
         const newUser = {
-            userId,
+            userId: userId, // 明确保存为字符串
             username,
             displayName: userData.result.legacy?.name || username,
             enabled: true,
