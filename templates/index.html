@@ -493,11 +493,12 @@
                 </div>
                 <div class="form-group">
                     <label>代理地址（可选，适用于中国服务器）</label>
-                    <input type="text" id="proxyUrl" placeholder="例如：http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                    <input type="text" id="proxyUrl" placeholder="例如：http://127.0.0.1:7890 或 socks5://user:pass@127.0.0.1:1080">
                     <small style="color: #6b7280; margin-top: 5px; display: block;">
                         💡 如果您在中国服务器上部署，Telegram可能需要代理。常见格式：<br>
                         • HTTP代理：http://代理地址:端口<br>
                         • SOCKS5代理：socks5://代理地址:端口<br>
+                        • 带认证：socks5://用户名:密码@代理地址:端口<br>
                         留空则不使用代理
                     </small>
                 </div>

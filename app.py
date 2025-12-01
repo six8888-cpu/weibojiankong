@@ -247,6 +247,18 @@ def update_telegram_config():
         if not bot_token or not chat_id:
             return jsonify({'success': False, 'message': 'Bot Token和Chat ID不能为空'}), 400
         
+        # 验证代理URL格式（如果提供）
+        if proxy_url:
+            # 支持的格式：
+            # http://host:port
+            # https://host:port
+            # socks5://host:port
+            # socks5://user:pass@host:port
+            if not (proxy_url.startswith('http://') or 
+                    proxy_url.startswith('https://') or 
+                    proxy_url.startswith('socks5://')):
+                return jsonify({'success': False, 'message': '代理地址格式不正确，应为 http://、https:// 或 socks5:// 开头'}), 400
+        
         db.update_telegram_config(bot_token, chat_id, proxy_url)
         
         # 重新初始化Telegram通知器
