@@ -199,6 +199,14 @@ function renderUsers() {
                            onchange="updateUserOption('${user.userId}', 'monitorRetweets', this.checked)">
                     <label for="retweets-${user.userId}">🔄 转发</label>
                 </div>
+                
+                <div class="option-item">
+                    <input type="checkbox" 
+                           id="quotes-${user.userId}" 
+                           ${user.monitorQuotes ? 'checked' : ''}
+                           onchange="updateUserOption('${user.userId}', 'monitorQuotes', this.checked)">
+                    <label for="quotes-${user.userId}">💬 引用</label>
+                </div>
             </div>
             
             <div class="user-meta">

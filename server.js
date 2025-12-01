@@ -171,10 +171,16 @@ async function getUserReplies(userId, count = 20) {
     return await callTwitterAPI('user-replies', { user: userId, count: count });
 }
 
-// 获取推文的转发列表
-async function getPostRetweets(postId, count = 40) {
-    console.log(`调用 retweets API, 推文ID: ${postId}, 数量: ${count}`);
-    return await callTwitterAPI('retweets', { pid: postId, count: count });
+// 获取用户的转发推文（pid使用用户的rest_id）
+async function getUserRetweets(userId, count = 40) {
+    console.log(`调用 retweets API, 用户ID: ${userId}, 数量: ${count}`);
+    return await callTwitterAPI('retweets', { pid: userId, count: count });
+}
+
+// 获取用户的引用推文（pid使用用户的rest_id）
+async function getUserQuotes(userId, count = 40) {
+    console.log(`调用 quotes API, 用户ID: ${userId}, 数量: ${count}`);
+    return await callTwitterAPI('quotes', { pid: userId, count: count });
 }
 
 // 检查新推文
@@ -227,30 +233,51 @@ async function checkNewTweets(user) {
             return;
         }
 
-        // 初始化缓存
+        // 初始化缓存（首次运行，不发送通知）
         if (!userCache.lastTweetId) {
             userCache.lastTweetId = tweetEntries[0].sortIndex;
+            userCache.lastCheckTime = Date.now();
             cache[user.userId] = userCache;
             saveCache(cache);
+            console.log(`   首次初始化，不发送通知`);
             return;
         }
 
-        // 检查新推文
+        // 检查新推文（只通知1分钟内的）
+        const now = Date.now();
+        const oneMinuteAgo = now - 60 * 1000; // 1分钟前
         const newTweets = [];
+        
         for (const entry of tweetEntries) {
             if (entry.sortIndex > userCache.lastTweetId) {
                 const tweetData = entry.content?.itemContent?.tweet_results?.result;
                 if (tweetData && tweetData.legacy) {
-                    newTweets.push(tweetData.legacy);
+                    const tweet = tweetData.legacy;
+                    const tweetTime = new Date(tweet.created_at).getTime();
+                    
+                    // 只添加1分钟内的推文
+                    if (tweetTime >= oneMinuteAgo) {
+                        console.log(`   发现新推文: ${tweet.id_str}, 发布时间: ${new Date(tweetTime).toLocaleString('zh-CN')}`);
+                        newTweets.push(tweet);
+                    } else {
+                        console.log(`   跳过旧推文: ${tweet.id_str}, 发布于 ${new Date(tweetTime).toLocaleString('zh-CN')}`);
+                    }
                 }
             }
         }
 
-        if (newTweets.length > 0) {
+        // 更新缓存
+        if (tweetEntries.length > 0) {
             userCache.lastTweetId = tweetEntries[0].sortIndex;
+            userCache.lastCheckTime = now;
             cache[user.userId] = userCache;
             saveCache(cache);
+        }
 
+        // 发送通知（不重复发送）
+        if (newTweets.length > 0) {
+            console.log(`   准备发送 ${newTweets.length} 条新推文通知`);
+            
             for (const tweet of newTweets.reverse()) {
                 const message = `
 🐦 <b>新推文通知</b>
@@ -263,6 +290,8 @@ async function checkNewTweets(user) {
                 
                 await sendTelegramMessage(message);
             }
+        } else {
+            console.log(`   没有1分钟内的新推文`);
         }
     } catch (error) {
         console.error(`检查用户 ${user.username} 的新推文失败:`, error.message);
@@ -304,30 +333,49 @@ async function checkNewReplies(user) {
         
         if (replyEntries.length === 0) return;
 
-        // 初始化缓存
+        // 初始化缓存（首次运行，不发送通知）
         if (!userCache.lastReplyId) {
             userCache.lastReplyId = replyEntries[0].sortIndex;
             cache[user.userId] = userCache;
             saveCache(cache);
+            console.log(`   首次初始化回复缓存，不发送通知`);
             return;
         }
 
-        // 检查新回复
+        // 检查新回复（只通知1分钟内的）
+        const now = Date.now();
+        const oneMinuteAgo = now - 60 * 1000;
         const newReplies = [];
+        
         for (const entry of replyEntries) {
             if (entry.sortIndex > userCache.lastReplyId) {
                 const replyData = entry.content?.itemContent?.tweet_results?.result;
                 if (replyData && replyData.legacy) {
-                    newReplies.push(replyData.legacy);
+                    const reply = replyData.legacy;
+                    const replyTime = new Date(reply.created_at).getTime();
+                    
+                    // 只添加1分钟内的回复
+                    if (replyTime >= oneMinuteAgo) {
+                        console.log(`   发现新回复: ${reply.id_str}`);
+                        newReplies.push(reply);
+                    } else {
+                        console.log(`   跳过旧回复: ${reply.id_str}`);
+                    }
                 }
             }
         }
 
-        if (newReplies.length > 0) {
+        // 更新缓存
+        if (replyEntries.length > 0) {
             userCache.lastReplyId = replyEntries[0].sortIndex;
             cache[user.userId] = userCache;
             saveCache(cache);
+        }
 
+        // 发送通知
+        if (newReplies.length > 0) {
+            console.log(`   准备发送 ${newReplies.length} 条新回复通知`);
+            
             for (const reply of newReplies.reverse()) {
                 const message = `
 💬 <b>新回复通知</b>
@@ -340,6 +388,8 @@ async function checkNewReplies(user) {
                 
                 await sendTelegramMessage(message);
             }
+        } else {
+            console.log(`   没有1分钟内的新回复`);
         }
     } catch (error) {
         console.error(`检查用户 ${user.username} 的新回复失败:`, error.message);
@@ -413,7 +463,8 @@ async function checkRetweets(user) {
         const cache = getCache();
         const userCache = cache[user.userId] || {};
         
-        const tweets = await getUserTweets(user.userId, 20);
+        // 使用 retweets API，pid 参数使用用户的 rest_id
+        const tweets = await getUserRetweets(user.userId, 20);
         
         // 尝试多种可能的响应结构
         let entries = [];
@@ -431,52 +482,160 @@ async function checkRetweets(user) {
             return;
         }
 
-        // 解析推文数据
+        // 解析转发数据
         const tweetEntries = entries.filter(e => {
             const entryId = e.entryId || e.id || e.tweet_id || '';
             return String(entryId).startsWith('tweet-') || String(entryId).includes('tweet');
         });
         
+        console.log(`📊 找到 ${tweetEntries.length} 条转发条目`);
+        
         if (!userCache.checkedRetweets) {
             userCache.checkedRetweets = {};
         }
 
-        // 检查转发
+        // 检查转发（只通知1分钟内的）
+        const now = Date.now();
+        const oneMinuteAgo = now - 60 * 1000;
+        let newRetweetsCount = 0;
+        
         for (const entry of tweetEntries) {
             const tweetData = entry.content?.itemContent?.tweet_results?.result;
             if (tweetData && tweetData.legacy) {
                 const tweet = tweetData.legacy;
+                const tweetId = tweet.id_str;
+                const tweetTime = new Date(tweet.created_at).getTime();
                 
-                // 检查是否是转发
-                if (tweet.retweeted_status_result) {
-                    const tweetId = tweet.id_str;
+                // 只处理1分钟内且未检查过的转发
+                if (!userCache.checkedRetweets[tweetId] && tweetTime >= oneMinuteAgo) {
+                    userCache.checkedRetweets[tweetId] = true;
+                    newRetweetsCount++;
                     
-                    if (!userCache.checkedRetweets[tweetId]) {
-                        userCache.checkedRetweets[tweetId] = true;
-                        
-                        const originalTweet = tweet.retweeted_status_result.result?.legacy;
-                        const originalUser = tweet.retweeted_status_result.result?.core?.user_results?.result?.legacy;
-                        
-                        const message = `
+                    // 提取转发的原始推文信息
+                    const originalTweet = tweet.retweeted_status_result?.result?.legacy;
+                    const originalUser = tweet.retweeted_status_result?.result?.core?.user_results?.result?.legacy;
+                    
+                    console.log(`   发现新转发: ${tweetId}`);
+                    
+                    const message = `
 🔄 <b>转发推文通知</b>
 
 👤 用户: @${user.username}
 📝 转发了: @${originalUser?.screen_name || '未知用户'}
-💭 原文: ${originalTweet?.full_text || originalTweet?.text || '无内容'}
+💭 原文: ${originalTweet?.full_text || originalTweet?.text || tweet.full_text || '无内容'}
 🔗 链接: https://twitter.com/${user.username}/status/${tweetId}
 ⏰ 时间: ${new Date(tweet.created_at).toLocaleString('zh-CN')}
-                        `.trim();
-                        
-                        await sendTelegramMessage(message);
-                    }
+                    `.trim();
+                    
+                    await sendTelegramMessage(message);
+                } else if (userCache.checkedRetweets[tweetId]) {
+                    console.log(`   跳过已通知的转发: ${tweetId}`);
+                } else {
+                    console.log(`   跳过旧转发: ${tweetId}`);
                 }
             }
+        }
+        
+        if (newRetweetsCount === 0) {
+            console.log(`   没有1分钟内的新转发`);
         }
 
         cache[user.userId] = userCache;
         saveCache(cache);
     } catch (error) {
         console.error(`检查用户 ${user.username} 的转发推文失败:`, error.message);
+    }
+}
+
+// 检查引用推文
+async function checkQuotes(user) {
+    try {
+        console.log(`🔍 开始检查引用 - 用户: @${user.username}, ID: ${user.userId}`);
+        const cache = getCache();
+        const userCache = cache[user.userId] || {};
+        
+        // 使用 quotes API，pid 参数使用用户的 rest_id
+        const tweets = await getUserQuotes(user.userId, 20);
+        
+        // 尝试多种可能的响应结构
+        let entries = [];
+        if (tweets?.result?.timeline?.instructions) {
+            entries = tweets.result.timeline.instructions
+                .find(i => i.type === 'TimelineAddEntries')?.entries || [];
+        } else if (tweets?.result?.entries) {
+            entries = tweets.result.entries;
+        } else if (tweets?.entries) {
+            entries = tweets.entries;
+        } else if (Array.isArray(tweets)) {
+            entries = tweets;
+        } else {
+            console.warn(`⚠️  无法解析引用API响应结构`);
+            return;
+        }
+
+        // 解析引用数据
+        const tweetEntries = entries.filter(e => {
+            const entryId = e.entryId || e.id || e.tweet_id || '';
+            return String(entryId).startsWith('tweet-') || String(entryId).includes('tweet');
+        });
+        
+        console.log(`📊 找到 ${tweetEntries.length} 条引用条目`);
+        
+        if (!userCache.checkedQuotes) {
+            userCache.checkedQuotes = {};
+        }
+
+        // 检查引用（只通知1分钟内的）
+        const now = Date.now();
+        const oneMinuteAgo = now - 60 * 1000;
+        let newQuotesCount = 0;
+        
+        for (const entry of tweetEntries) {
+            const tweetData = entry.content?.itemContent?.tweet_results?.result;
+            if (tweetData && tweetData.legacy) {
+                const tweet = tweetData.legacy;
+                const tweetId = tweet.id_str;
+                const tweetTime = new Date(tweet.created_at).getTime();
+                
+                // 只处理1分钟内且未检查过的引用
+                if (!userCache.checkedQuotes[tweetId] && tweetTime >= oneMinuteAgo) {
+                    userCache.checkedQuotes[tweetId] = true;
+                    newQuotesCount++;
+                    
+                    // 提取被引用的原始推文信息
+                    const quotedTweet = tweet.quoted_status_result?.result?.legacy;
+                    const quotedUser = tweet.quoted_status_result?.result?.core?.user_results?.result?.legacy;
+                    
+                    console.log(`   发现新引用: ${tweetId}`);
+                    
+                    const message = `
+💬 <b>引用推文通知</b>
+
+👤 用户: @${user.username}
+📝 评论: ${tweet.full_text || tweet.text}
+💭 引用了: @${quotedUser?.screen_name || '未知用户'}
+📄 原文: ${quotedTweet?.full_text || quotedTweet?.text || '无内容'}
+🔗 链接: https://twitter.com/${user.username}/status/${tweetId}
+⏰ 时间: ${new Date(tweet.created_at).toLocaleString('zh-CN')}
+                    `.trim();
+                    
+                    await sendTelegramMessage(message);
+                } else if (userCache.checkedQuotes[tweetId]) {
+                    console.log(`   跳过已通知的引用: ${tweetId}`);
+                } else {
+                    console.log(`   跳过旧引用: ${tweetId}`);
+                }
+            }
+        }
+        
+        if (newQuotesCount === 0) {
+            console.log(`   没有1分钟内的新引用`);
+        }
+
+        cache[user.userId] = userCache;
+        saveCache(cache);
+    } catch (error) {
+        console.error(`检查用户 ${user.username} 的引用推文失败:`, error.message);
     }
 }
 
@@ -510,6 +669,11 @@ async function runMonitoringTask() {
             // 检查转发
             if (user.monitorRetweets) {
                 await checkRetweets(user);
+            }
+            
+            // 检查引用（如果启用）
+            if (user.monitorQuotes) {
+                await checkQuotes(user);
             }
             
             // 延迟，避免API限制
@@ -672,6 +836,7 @@ app.post('/api/users', async (req, res) => {
             monitorReplies: true,
             monitorPinned: true,
             monitorRetweets: true,
+            monitorQuotes: true,
             addedAt: new Date().toISOString()
         };
         
