@@ -5,6 +5,7 @@
 import os
 import json
 import asyncio
+import gc
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
@@ -18,6 +19,15 @@ from pathlib import Path
 from monitor import WebMonitor
 from database import Database
 from telegram_bot import TelegramNotifier
+
+# 尝试导入健康监控（可选）
+try:
+    from health_monitor import health_monitor
+    HEALTH_MONITOR_AVAILABLE = True
+except ImportError:
+    health_monitor = None
+    HEALTH_MONITOR_AVAILABLE = False
+    logging.warning("健康监控模块未安装（需要psutil），部分功能不可用")
 
 # 配置日志
 logging.basicConfig(
@@ -51,7 +61,11 @@ def init_monitor():
     # 获取Telegram配置
     config = db.get_telegram_config()
     if config:
-        telegram_notifier = TelegramNotifier(config['bot_token'], config['chat_id'])
+        telegram_notifier = TelegramNotifier(
+            config['bot_token'], 
+            config['chat_id'],
+            config.get('proxy_url')
+        )
     
     monitor = WebMonitor(db, telegram_notifier)
 
@@ -60,8 +74,23 @@ def run_monitor_task():
     """执行监控任务"""
     try:
         logger.info("开始执行监控任务...")
+        
+        # 执行监控
         if monitor:
             asyncio.run(monitor.check_all_urls())
+        
+        # 自动清理旧日志（保留最新5条）
+        db.cleanup_old_logs(keep_count=5)
+        
+        # 健康检查（每次监控后）
+        if HEALTH_MONITOR_AVAILABLE:
+            health_monitor.log_health_status()
+            
+            # 检查是否需要手动GC
+            if health_monitor.should_restart():
+                logger.info("执行垃圾回收以释放内存...")
+                gc.collect()
+        
         logger.info("监控任务执行完成")
     except Exception as e:
         logger.error(f"监控任务执行出错: {e}", exc_info=True)
@@ -197,6 +226,7 @@ def get_telegram_config():
         if config:
             # 隐藏部分token信息
             config['bot_token'] = config['bot_token'][:10] + '...' if config['bot_token'] else ''
+            # 代理URL不需要隐藏
         return jsonify({'success': True, 'data': config})
     except Exception as e:
         logger.error(f"获取Telegram配置失败: {e}")
@@ -212,14 +242,15 @@ def update_telegram_config():
         data = request.json
         bot_token = data.get('bot_token', '').strip()
         chat_id = data.get('chat_id', '').strip()
+        proxy_url = data.get('proxy_url', '').strip() or None
         
         if not bot_token or not chat_id:
             return jsonify({'success': False, 'message': 'Bot Token和Chat ID不能为空'}), 400
         
-        db.update_telegram_config(bot_token, chat_id)
+        db.update_telegram_config(bot_token, chat_id, proxy_url)
         
         # 重新初始化Telegram通知器
-        telegram_notifier = TelegramNotifier(bot_token, chat_id)
+        telegram_notifier = TelegramNotifier(bot_token, chat_id, proxy_url)
         if monitor:
             monitor.telegram_notifier = telegram_notifier
         
@@ -318,12 +349,59 @@ def run_monitor_now():
         # 在后台执行监控任务
         import threading
         thread = threading.Thread(target=run_monitor_task)
+        thread.daemon = True  # 设置为守护线程，程序退出时自动结束
         thread.start()
         
         return jsonify({'success': True, 'message': '监控任务已开始执行'})
     except Exception as e:
         logger.error(f"执行监控失败: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/logs/cleanup', methods=['POST'])
+def cleanup_logs():
+    """手动清理日志"""
+    try:
+        keep_count = request.json.get('keep_count', 5) if request.json else 5
+        cleaned = db.cleanup_old_logs(keep_count)
+        
+        if cleaned:
+            return jsonify({'success': True, 'message': f'日志已清理，保留最新{keep_count}条'})
+        else:
+            return jsonify({'success': True, 'message': '日志数量未超过限制，无需清理'})
+    except Exception as e:
+        logger.error(f"清理日志失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """健康检查接口"""
+    try:
+        # 检查数据库连接
+        urls = db.get_all_urls()
+        
+        status = {
+            'status': 'healthy',
+            'monitor_running': scheduler.running,
+            'urls_count': len(urls),
+            'telegram_configured': db.get_telegram_config() is not None
+        }
+        
+        # 添加系统资源信息
+        if HEALTH_MONITOR_AVAILABLE:
+            system_status = health_monitor.get_health_status()
+            status.update({
+                'system': system_status,
+                'health_monitor_enabled': True
+            })
+        else:
+            status['health_monitor_enabled'] = False
+        
+        return jsonify({'success': True, 'data': status})
+    except Exception as e:
+        logger.error(f"健康检查失败: {e}")
+        return jsonify({'success': False, 'message': str(e), 'status': 'unhealthy'}), 500
 
 
 if __name__ == '__main__':

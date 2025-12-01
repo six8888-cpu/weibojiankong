@@ -69,6 +69,7 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 bot_token TEXT NOT NULL,
                 chat_id TEXT NOT NULL,
+                proxy_url TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -299,7 +300,7 @@ class Database:
     
     # ==================== Telegram配置 ====================
     
-    def update_telegram_config(self, bot_token: str, chat_id: str):
+    def update_telegram_config(self, bot_token: str, chat_id: str, proxy_url: str = None):
         """更新Telegram配置"""
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -309,9 +310,9 @@ class Database:
         
         # 插入新配置
         cursor.execute('''
-            INSERT INTO telegram_config (bot_token, chat_id)
-            VALUES (?, ?)
-        ''', (bot_token, chat_id))
+            INSERT INTO telegram_config (bot_token, chat_id, proxy_url)
+            VALUES (?, ?, ?)
+        ''', (bot_token, chat_id, proxy_url))
         
         conn.commit()
         conn.close()
@@ -324,7 +325,7 @@ class Database:
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT bot_token, chat_id, updated_at
+            SELECT bot_token, chat_id, proxy_url, updated_at
             FROM telegram_config
             ORDER BY id DESC
             LIMIT 1
@@ -334,4 +335,33 @@ class Database:
         conn.close()
         
         return dict(row) if row else None
+    
+    # ==================== 日志清理 ====================
+    
+    def cleanup_old_logs(self, keep_count: int = 5):
+        """清理旧日志，只保留最新的N条"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # 获取日志总数
+        cursor.execute('SELECT COUNT(*) as count FROM monitor_logs')
+        total = cursor.fetchone()['count']
+        
+        if total > keep_count:
+            # 删除旧日志
+            cursor.execute('''
+                DELETE FROM monitor_logs
+                WHERE id NOT IN (
+                    SELECT id FROM monitor_logs
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                )
+            ''', (keep_count,))
+            
+            deleted = cursor.rowcount
+            conn.commit()
+            logger.info(f"清理旧日志：删除了 {deleted} 条记录，保留最新 {keep_count} 条")
+        
+        conn.close()
+        return total > keep_count
 

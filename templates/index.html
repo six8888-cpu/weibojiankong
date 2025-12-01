@@ -475,6 +475,9 @@
 
             <!-- 监控日志 -->
             <div class="tab-content" id="logs-tab">
+                <div style="margin-bottom: 15px;">
+                    <button class="btn btn-warning btn-sm" onclick="cleanupLogs()">🗑️ 清理旧日志（保留最新5条）</button>
+                </div>
                 <div id="logsList"></div>
             </div>
 
@@ -487,6 +490,16 @@
                 <div class="form-group">
                     <label>Chat ID</label>
                     <input type="text" id="chatId" placeholder="请输入Chat ID">
+                </div>
+                <div class="form-group">
+                    <label>代理地址（可选，适用于中国服务器）</label>
+                    <input type="text" id="proxyUrl" placeholder="例如：http://127.0.0.1:7890 或 socks5://127.0.0.1:1080">
+                    <small style="color: #6b7280; margin-top: 5px; display: block;">
+                        💡 如果您在中国服务器上部署，Telegram可能需要代理。常见格式：<br>
+                        • HTTP代理：http://代理地址:端口<br>
+                        • SOCKS5代理：socks5://代理地址:端口<br>
+                        留空则不使用代理
+                    </small>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="saveTelegramConfig()">💾 保存配置</button>
@@ -818,6 +831,7 @@
                 if (result.success && result.data) {
                     document.getElementById('botToken').value = '';
                     document.getElementById('chatId').value = result.data.chat_id || '';
+                    document.getElementById('proxyUrl').value = result.data.proxy_url || '';
                 }
             } catch (error) {
                 console.error('加载Telegram配置失败:', error);
@@ -977,6 +991,7 @@
         async function saveTelegramConfig() {
             const botToken = document.getElementById('botToken').value.trim();
             const chatId = document.getElementById('chatId').value.trim();
+            const proxyUrl = document.getElementById('proxyUrl').value.trim();
             
             if (!botToken || !chatId) {
                 alert('请输入Bot Token和Chat ID');
@@ -987,7 +1002,11 @@
                 const response = await fetch('/api/telegram/config', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({bot_token: botToken, chat_id: chatId})
+                    body: JSON.stringify({
+                        bot_token: botToken, 
+                        chat_id: chatId,
+                        proxy_url: proxyUrl || null
+                    })
                 });
                 
                 const result = await response.json();
@@ -1066,6 +1085,31 @@
                 }
             } catch (error) {
                 alert('执行失败：' + error.message);
+            }
+        }
+
+        // 清理日志
+        async function cleanupLogs() {
+            if (!confirm('确定要清理旧日志吗？将只保留最新5条记录。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/logs/cleanup', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({keep_count: 5})
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    loadLogs(); // 刷新日志列表
+                } else {
+                    alert('清理失败：' + result.message);
+                }
+            } catch (error) {
+                alert('清理失败：' + error.message);
             }
         }
 

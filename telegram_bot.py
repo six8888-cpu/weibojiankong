@@ -10,9 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramNotifier:
-    def __init__(self, bot_token: str, chat_id: str):
+    def __init__(self, bot_token: str, chat_id: str, proxy_url: str = None):
         self.bot_token = bot_token
         self.chat_id = chat_id
+        self.proxy_url = proxy_url
         self.api_url = f"https://api.telegram.org/bot{bot_token}"
     
     async def send_message(self, message: str, parse_mode: str = 'HTML') -> bool:
@@ -35,8 +36,19 @@ class TelegramNotifier:
                 'parse_mode': parse_mode
             }
             
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=data, timeout=10) as response:
+            # 配置连接器（支持代理）
+            connector = None
+            if self.proxy_url:
+                connector = aiohttp.TCPConnector()
+            
+            timeout = aiohttp.ClientTimeout(total=30)
+            
+            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                kwargs = {'json': data}
+                if self.proxy_url:
+                    kwargs['proxy'] = self.proxy_url
+                
+                async with session.post(url, **kwargs) as response:
                     if response.status == 200:
                         logger.info("Telegram消息发送成功")
                         return True
@@ -59,8 +71,19 @@ class TelegramNotifier:
         try:
             url = f"{self.api_url}/getMe"
             
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=10) as response:
+            # 配置连接器（支持代理）
+            connector = None
+            if self.proxy_url:
+                connector = aiohttp.TCPConnector()
+            
+            timeout = aiohttp.ClientTimeout(total=30)
+            
+            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                kwargs = {}
+                if self.proxy_url:
+                    kwargs['proxy'] = self.proxy_url
+                
+                async with session.get(url, **kwargs) as response:
                     if response.status == 200:
                         result = await response.json()
                         if result.get('ok'):
