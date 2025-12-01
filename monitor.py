@@ -219,9 +219,15 @@ class WebMonitor:
 ⏰ <b>时间:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 ✅ 检测到指定关键词！
+
+⚠️ 该关键词已自动删除，不会再次通知。
                     """.strip()
                     
                     await self.telegram_notifier.send_message(message)
+                
+                # 自动删除已检测到的关键词，避免重复通知
+                self.db.delete_keyword(kw_data['id'])
+                logger.info(f"🗑️ 自动删除关键词: {keyword} (已通知)")
         
         if not found_keywords:
             logger.info(f"✗ 未找到关键词 (URL: {url_name})")
