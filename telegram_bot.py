@@ -6,6 +6,14 @@ import logging
 import aiohttp
 from typing import Optional
 
+# 尝试导入SOCKS5支持
+try:
+    from aiohttp_socks import ProxyConnector
+    SOCKS_AVAILABLE = True
+except ImportError:
+    SOCKS_AVAILABLE = False
+    logging.warning("aiohttp-socks未安装，SOCKS5代理功能不可用")
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,26 +44,47 @@ class TelegramNotifier:
                 'parse_mode': parse_mode
             }
             
-            # 配置连接器（支持代理）
+            # 配置连接器和代理
             connector = None
+            
             if self.proxy_url:
-                connector = aiohttp.TCPConnector()
+                if self.proxy_url.startswith('socks5://') or self.proxy_url.startswith('socks4://'):
+                    # SOCKS代理需要aiohttp-socks
+                    if SOCKS_AVAILABLE:
+                        connector = ProxyConnector.from_url(self.proxy_url)
+                        logger.info(f"使用SOCKS代理: {self.proxy_url.split('@')[-1]}")
+                    else:
+                        logger.error("SOCKS5代理需要安装 aiohttp-socks: pip install aiohttp-socks")
+                        return False
+                else:
+                    # HTTP/HTTPS代理使用普通connector
+                    connector = aiohttp.TCPConnector()
             
             timeout = aiohttp.ClientTimeout(total=30)
             
-            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-                kwargs = {'json': data}
-                if self.proxy_url:
-                    kwargs['proxy'] = self.proxy_url
-                
-                async with session.post(url, **kwargs) as response:
-                    if response.status == 200:
-                        logger.info("Telegram消息发送成功")
-                        return True
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Telegram消息发送失败: {response.status}, {error_text}")
-                        return False
+            # 根据代理类型决定如何传递
+            if self.proxy_url and not self.proxy_url.startswith('socks'):
+                # HTTP/HTTPS代理
+                async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                    async with session.post(url, json=data, proxy=self.proxy_url) as response:
+                        if response.status == 200:
+                            logger.info("Telegram消息发送成功")
+                            return True
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Telegram消息发送失败: {response.status}, {error_text}")
+                            return False
+            else:
+                # SOCKS代理或无代理
+                async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                    async with session.post(url, json=data) as response:
+                        if response.status == 200:
+                            logger.info("Telegram消息发送成功")
+                            return True
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Telegram消息发送失败: {response.status}, {error_text}")
+                            return False
         
         except Exception as e:
             logger.error(f"发送Telegram消息异常: {e}")
@@ -71,27 +100,48 @@ class TelegramNotifier:
         try:
             url = f"{self.api_url}/getMe"
             
-            # 配置连接器（支持代理）
+            # 配置连接器和代理
             connector = None
+            
             if self.proxy_url:
-                connector = aiohttp.TCPConnector()
+                if self.proxy_url.startswith('socks5://') or self.proxy_url.startswith('socks4://'):
+                    # SOCKS代理需要aiohttp-socks
+                    if SOCKS_AVAILABLE:
+                        connector = ProxyConnector.from_url(self.proxy_url)
+                    else:
+                        logger.error("SOCKS5代理需要安装 aiohttp-socks: pip install aiohttp-socks")
+                        return False
+                else:
+                    # HTTP/HTTPS代理
+                    connector = aiohttp.TCPConnector()
             
             timeout = aiohttp.ClientTimeout(total=30)
             
-            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-                kwargs = {}
-                if self.proxy_url:
-                    kwargs['proxy'] = self.proxy_url
-                
-                async with session.get(url, **kwargs) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        if result.get('ok'):
-                            logger.info(f"Telegram连接测试成功: {result.get('result', {}).get('username')}")
-                            return True
-                    
-                    logger.error(f"Telegram连接测试失败: {response.status}")
-                    return False
+            # 根据代理类型决定如何传递
+            if self.proxy_url and not self.proxy_url.startswith('socks'):
+                # HTTP/HTTPS代理
+                async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                    async with session.get(url, proxy=self.proxy_url) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            if result.get('ok'):
+                                logger.info(f"Telegram连接测试成功: {result.get('result', {}).get('username')}")
+                                return True
+                        
+                        logger.error(f"Telegram连接测试失败: {response.status}")
+                        return False
+            else:
+                # SOCKS代理或无代理
+                async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            if result.get('ok'):
+                                logger.info(f"Telegram连接测试成功: {result.get('result', {}).get('username')}")
+                                return True
+                        
+                        logger.error(f"Telegram连接测试失败: {response.status}")
+                        return False
         
         except Exception as e:
             logger.error(f"Telegram连接测试异常: {e}")

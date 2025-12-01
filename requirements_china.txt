@@ -14,8 +14,9 @@ playwright==1.40.0
 # HTTP客户端（支持代理）
 aiohttp==3.9.1
 aiohttp-socks==0.8.4  # SOCKS代理支持
+python-socks[asyncio]==2.4.3  # SOCKS代理依赖
 requests==2.31.0
-requests[socks]==2.31.0  # SOCKS代理支持
+pysocks==1.7.1  # SOCKS代理支持
 
 # 数据库
 # SQLite已内置，无需额外安装
