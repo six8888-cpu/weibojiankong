@@ -133,7 +133,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$CURRENT_DIR
-Environment="PATH=$CURRENT_DIR/venv/bin"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$CURRENT_DIR/venv/bin"
 ExecStart=$CURRENT_DIR/venv/bin/python $CURRENT_DIR/app.py
 Restart=always
 RestartSec=10
