@@ -110,6 +110,13 @@ async function callTwitterAPI(endpoint, params = {}) {
         throw new Error('RapidAPI Key未配置');
     }
 
+    // 构建完整的URL用于日志
+    const queryString = Object.keys(params).map(key => `${key}=${params[key]}`).join('&');
+    const fullUrl = `https://twitter241.p.rapidapi.com/${endpoint}?${queryString}`;
+    
+    console.log(`📡 API请求: ${fullUrl}`);
+    console.log(`   参数:`, JSON.stringify(params));
+
     try {
         const response = await axios.get(`https://twitter241.p.rapidapi.com/${endpoint}`, {
             params: params,
@@ -119,13 +126,19 @@ async function callTwitterAPI(endpoint, params = {}) {
             },
             timeout: 15000
         });
+        console.log(`✅ API请求成功: ${endpoint}`);
         return response.data;
     } catch (error) {
         if (error.response) {
-            console.error(`调用Twitter API失败 (${endpoint}):`, error.response.status, error.response.statusText);
-            console.error('请求参数:', JSON.stringify(params));
+            console.error(`❌ API请求失败 (${endpoint}):`, error.response.status, error.response.statusText);
+            console.error(`   完整URL: ${fullUrl}`);
+            console.error(`   请求参数:`, JSON.stringify(params));
+            if (error.response.data) {
+                console.error(`   错误响应:`, JSON.stringify(error.response.data).substring(0, 200));
+            }
         } else {
-            console.error(`调用Twitter API失败 (${endpoint}):`, error.message);
+            console.error(`❌ API请求失败 (${endpoint}):`, error.message);
+            console.error(`   完整URL: ${fullUrl}`);
         }
         throw error;
     }
@@ -157,6 +170,7 @@ async function getPostRetweets(postId, count = 40) {
 // 检查新推文
 async function checkNewTweets(user) {
     try {
+        console.log(`🔍 开始检查新推文 - 用户: @${user.username}, ID: ${user.userId} (类型: ${typeof user.userId})`);
         const cache = getCache();
         const userCache = cache[user.userId] || {};
         
