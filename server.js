@@ -349,16 +349,33 @@ async function checkNewReplies(user) {
 // 检查置顶推文
 async function checkPinnedTweet(user) {
     try {
+        console.log(`🔍 开始检查置顶推文 - 用户: @${user.username}`);
         const cache = getCache();
         const userCache = cache[user.userId] || {};
         
         const userData = await getUserByUsername(user.username);
         
-        if (!userData || !userData.result) return;
+        if (!userData) {
+            console.warn(`⚠️  无法获取用户信息`);
+            return;
+        }
 
-        const pinnedTweetId = userData.result.legacy?.pinned_tweet_ids_str?.[0];
+        // 尝试从不同位置提取置顶推文ID
+        let pinnedTweetId = null;
+        if (userData.pinned_tweet_ids_str?.[0]) {
+            pinnedTweetId = userData.pinned_tweet_ids_str[0];
+        } else if (userData.legacy?.pinned_tweet_ids_str?.[0]) {
+            pinnedTweetId = userData.legacy.pinned_tweet_ids_str[0];
+        } else if (userData.result?.legacy?.pinned_tweet_ids_str?.[0]) {
+            pinnedTweetId = userData.result.legacy.pinned_tweet_ids_str[0];
+        }
         
-        if (!pinnedTweetId) return;
+        if (!pinnedTweetId) {
+            console.log(`   用户没有置顶推文`);
+            return;
+        }
+        
+        console.log(`   当前置顶推文ID: ${pinnedTweetId}`);
 
         // 初始化缓存
         if (!userCache.pinnedTweetId) {
@@ -585,12 +602,36 @@ app.post('/api/users', async (req, res) => {
         
         console.log(`获取用户信息结果:`, JSON.stringify(userData, null, 2));
         
-        if (!userData || !userData.result) {
+        if (!userData) {
             return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
-        // 确保用户ID是字符串格式（API要求）
-        const userId = String(userData.result.rest_id);
+        // 从 about-account API 响应中提取 rest_id
+        // 尝试多种可能的数据结构
+        let userId = null;
+        
+        if (userData.rest_id) {
+            // 直接在顶层
+            userId = String(userData.rest_id);
+            console.log(`✅ 从 userData.rest_id 获取ID: ${userId}`);
+        } else if (userData.result?.rest_id) {
+            // 在 result 对象中
+            userId = String(userData.result.rest_id);
+            console.log(`✅ 从 userData.result.rest_id 获取ID: ${userId}`);
+        } else if (userData.data?.rest_id) {
+            // 在 data 对象中
+            userId = String(userData.data.rest_id);
+            console.log(`✅ 从 userData.data.rest_id 获取ID: ${userId}`);
+        } else if (userData.user?.id_str) {
+            // 其他可能的格式
+            userId = String(userData.user.id_str);
+            console.log(`✅ 从 userData.user.id_str 获取ID: ${userId}`);
+        } else {
+            console.error(`❌ 无法从响应中提取 rest_id`);
+            console.error(`响应结构:`, Object.keys(userData));
+            return res.status(500).json({ success: false, message: '无法获取用户ID，API响应格式异常' });
+        }
+        
         console.log(`用户 @${username} 的ID: ${userId} (类型: ${typeof userId})`);
         
         const users = getMonitoredUsers();
