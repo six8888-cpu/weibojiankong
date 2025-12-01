@@ -1,252 +1,187 @@
-# 🔍 微博关键词监控系统 - Web版
+# 网页监控系统 - 快速开始指南
 
-一个功能强大的微博监控工具，支持Web界面管理，关键词模糊匹配，Telegram实时通知。
+## 🎯 5分钟快速上手
 
-## ✨ 特点
+### Windows用户
 
-- 🌐 **Web管理界面** - 美观的可视化管理面板
-- 🎯 **关键词管理** - Web界面添加/删除/编辑关键词，支持模糊匹配
-- 📱 **Telegram通知** - 实时推送匹配的微博内容  
-- 🤖 **智能反爬** - 使用undetected-chromedriver绕过检测
-- ⚡ **高频监控** - 1分钟检查一次（可配置）
-- 📊 **实时监控** - 查看监控状态、日志、统计数据
-- 🔄 **自动去重** - 避免重复通知
-- 🚀 **一键部署** - 适配香港/海外服务器
+1. **安装Python**
+   - 访问 https://www.python.org/downloads/
+   - 下载并安装Python 3.8+
+   - 安装时记得勾选"Add Python to PATH"
 
-## 📸 界面预览
+2. **启动程序**
+   ```bash
+   # 双击运行
+   start.bat
+   ```
 
-Web管理界面包含：
-- 监控状态面板（运行状态、检查次数、匹配次数）
-- 关键词管理（添加、编辑、删除）
-- 配置管理（微博地址、Telegram配置、检查间隔）
-- 实时日志查看
-- 一键启动/停止监控
+3. **访问界面**
+   - 打开浏览器访问：http://localhost:5000
 
-## 🚀 快速部署（香港服务器）
-
-### 一键安装
+### Linux用户
 
 ```bash
-# 1. 克隆代码
-git clone <仓库地址> && cd weibo-monitor
+# 一键安装
+chmod +x install.sh
+./install.sh
 
-# 2. 运行安装脚本
-chmod +x install.sh && ./install.sh
-
-# 3. 编辑配置
-nano config.yaml
-
-# 4. 启动服务
-sudo systemctl start weibo-monitor
-sudo systemctl enable weibo-monitor
-
-# 5. 开放端口
-sudo ufw allow 5000
+# 启动程序
+./start.sh
 ```
 
-### 访问管理界面
+## 📱 配置Telegram（发送到群组）
 
-```
-http://你的服务器IP:5000
-```
+### 1. 创建机器人
+- 在Telegram搜索：`@BotFather`
+- 发送：`/newbot`
+- 按提示操作，获取 **Bot Token**
 
-详细部署文档：[DEPLOY.md](DEPLOY.md)  
-快速开始：[QUICKSTART.md](QUICKSTART.md)
+### 2. 创建群组并获取Chat ID
 
-## 📦 项目结构
+**方法1：使用API获取（推荐）**
+1. 创建一个Telegram群组
+2. 将你的机器人添加到群组
+3. 在群组中 @你的机器人 发送任意消息
+4. 浏览器访问：`https://api.telegram.org/bot你的BOT_TOKEN/getUpdates`
+5. 在JSON中找到 `"chat":{"id":-1001234567890}`
+6. 复制这个**负数ID**（包括负号）
 
-```
-weibo-monitor/
-├── web_server.py           # Web服务器（Flask后端）
-├── weibo_monitor.py        # 监控核心逻辑
-├── config.yaml             # 配置文件
-├── requirements.txt        # Python依赖
-├── install.sh             # 一键安装脚本
-├── start.sh               # 启动脚本
-├── stop.sh                # 停止脚本
-├── restart.sh             # 重启脚本
-├── templates/
-│   └── index.html         # Web前端界面
-├── static/                # 静态资源
-├── logs/                  # 日志目录
-└── README.md             # 说明文档
-```
+**方法2：使用机器人获取**
+1. 搜索并启动 `@getidsbot` 或 `@RawDataBot`
+2. 将机器人添加到你的群组
+3. 它会显示群组的Chat ID
 
-## ⚙️ 配置说明
+**重要提示：**
+- ✅ 群组Chat ID是**负数**（例如：-1001234567890）
+- ✅ 个人Chat ID是**正数**（例如：123456789）
+- ✅ 机器人必须有发送消息权限
 
-### config.yaml
+### 3. 保存配置
+- 在Web界面点击"Telegram配置"
+- 填入Bot Token和Chat ID（**包括负号**）
+- 点击"测试连接"
 
-```yaml
-# 监控地址
-weibo_url: "https://weibo.com/u/2656274875"
+## 🔍 添加监控（3步）
 
-# 关键词（也可在Web界面管理）
-keywords:
-  - "关键词1"
-  - "关键词2"
+1. **添加网址**
+   - 点击"监控列表" → "添加监控网址"
+   - 输入网址，例如：`https://example.com`
 
-# Telegram配置
-telegram:
-  bot_token: "你的TOKEN"
-  chat_id: "你的CHAT_ID"
-  proxy_url: ""  # 香港服务器留空
+2. **添加关键词**
+   - 点击"关键词管理" → "添加关键词"
+   - 选择网址，输入关键词，例如："促销"
 
-# 监控设置
-monitor:
-  check_interval: 1  # 分钟
-  headless: true     # 无头模式
+3. **启动监控**
+   - 点击顶部"启动监控"按钮
+   - 完成！系统会自动监控并通知
+
+## 💡 使用技巧
+
+### 关键词匹配
+
+- **模糊匹配**（推荐）：包含关键词即可
+  - 例如："促销" 会匹配 "限时促销"、"促销活动"
   
-# Web服务器
-web:
-  host: "0.0.0.0"   # 允许外网访问
-  port: 5000
-```
+- **精确匹配**：完整单词匹配
+  - 例如："sale" 只匹配 "sale"，不匹配 "sales"
 
-## 🎯 使用方法
+### 检查间隔
 
-### 1. Web界面管理（推荐）
+- **默认**：300秒（5分钟）
+- **建议**：根据网站更新频率调整
+  - 新闻网站：300-600秒
+  - 电商网站：600-1800秒
+  - 公告页面：1800-3600秒
 
-访问 `http://服务器IP:5000`，在界面中：
+### 多关键词
 
-1. **添加关键词**：在"关键词管理"区域输入关键词并添加
-2. **编辑关键词**：点击"编辑"按钮修改
-3. **删除关键词**：点击"删除"按钮移除
-4. **启动监控**：点击"启动监控"按钮
-5. **查看日志**：实时查看运行日志
+可以为同一个网址添加多个关键词：
+- 关键词1：促销
+- 关键词2：优惠
+- 关键词3：折扣
 
-### 2. 命令行管理
+任意一个关键词出现都会收到通知。
 
-```bash
-# 启动
-sudo systemctl start weibo-monitor
+## 🚨 注意事项
 
-# 停止  
-sudo systemctl stop weibo-monitor
+1. **首次运行**
+   - 首次启动会自动下载浏览器（约100MB）
+   - 请耐心等待安装完成
 
-# 重启
-sudo systemctl restart weibo-monitor
+2. **检查间隔**
+   - 不要设置过短的间隔（建议≥60秒）
+   - 避免给目标网站造成压力
 
-# 查看状态
-sudo systemctl status weibo-monitor
+3. **网络要求**
+   - 确保能访问目标网站
+   - Telegram通知需要能访问api.telegram.org
 
-# 查看日志
-sudo journalctl -u weibo-monitor -f
-```
+4. **系统资源**
+   - 每个监控任务会启动一个浏览器实例
+   - 建议同时监控≤10个网址
 
-## 📱 Telegram配置
+## 📊 查看日志
 
-### 创建Bot
+在Web界面点击"监控日志"查看：
+- ✅ 绿色：检测到关键词
+- ℹ️ 蓝色：未检测到关键词
+- ❌ 红色：访问失败
 
-1. Telegram搜索 `@BotFather`
-2. 发送 `/newbot`
-3. 按提示设置名称
-4. 获取Token
+## 🔧 常见问题
 
-### 获取Chat ID
+### 收不到Telegram通知？
 
-1. Telegram搜索 `@userinfobot`  
-2. 点击Start
-3. 获取你的ID
+1. 确认Bot Token和Chat ID正确
+2. 向机器人发送 `/start` 激活
+3. 点击"测试连接"验证
 
-## 🔧 API接口
+### 监控不运行？
 
-后端提供RESTful API：
+1. 确认已点击"启动监控"
+2. 确认网址处于"启用"状态
+3. 确认已添加关键词
+4. 点击"立即执行"手动测试
 
-```
-GET  /api/config           # 获取配置
-POST /api/config           # 更新配置
-GET  /api/keywords         # 获取关键词列表
-POST /api/keywords         # 添加关键词
-PUT  /api/keywords/<id>    # 更新关键词
-DELETE /api/keywords/<id>  # 删除关键词
-POST /api/monitor/start    # 启动监控
-POST /api/monitor/stop     # 停止监控
-GET  /api/monitor/status   # 获取状态
-GET  /api/logs             # 获取日志
-POST /api/test/telegram    # 测试Telegram
-```
+### 无法访问某些网站？
 
-## 🛠️ 技术栈
+1. 检查网址是否正确
+2. 检查网络连接
+3. 某些网站可能需要登录
+4. 某些网站反爬虫机制很强，可能无法绕过
 
-- **后端**: Python + Flask
-- **前端**: 原生JavaScript + CSS3
-- **爬虫**: Selenium + undetected-chromedriver
-- **解析**: BeautifulSoup4
-- **通知**: python-telegram-bot
-- **调度**: schedule
+## 🎓 进阶使用
 
-## 🔒 安全建议
-
-1. 使用防火墙限制端口访问
-2. 配置Nginx反向代理+SSL
-3. 定期更新依赖包
-4. 不要暴露敏感配置
-
-## 📊 系统要求
-
-- **系统**: Ubuntu 20.04+ / Debian 11+ / CentOS 8+
-- **内存**: 最低1GB，推荐2GB+
-- **CPU**: 1核心+
-- **硬盘**: 5GB+
-- **网络**: 能访问微博和Telegram
-
-## 🐛 故障排查
-
-### 服务无法启动
+### 使用systemd服务（Linux）
 
 ```bash
-# 查看日志
-sudo journalctl -u weibo-monitor -n 50
-
-# 手动测试
-source venv/bin/activate
-python web_server.py
+# 安装时选择创建服务
+sudo systemctl start web-monitor
+sudo systemctl enable web-monitor
+sudo systemctl status web-monitor
 ```
 
-### Chrome驱动问题
+### 修改端口
+
+编辑 `.env` 文件：
+```
+FLASK_PORT=8080
+```
+
+### 查看详细日志
 
 ```bash
-pip uninstall undetected-chromedriver
-pip install undetected-chromedriver
+# 查看日志文件
+tail -f monitor.log
 ```
 
-### Web界面无法访问
+## 📞 获取帮助
 
-1. 检查服务状态：`sudo systemctl status weibo-monitor`
-2. 检查端口：`sudo netstat -tlnp | grep 5000`
-3. 检查防火墙：`sudo ufw status`
-4. 检查安全组（云服务器）
-
-详细排查见：[DEPLOY.md](DEPLOY.md#故障排查)
-
-## 📝 更新日志
-
-### v2.0.0 (2025-12-01)
-- ✨ 新增Web管理界面
-- ✨ 支持在线管理关键词
-- ✨ 实时监控状态查看
-- ✨ 在线日志查看
-- 🎯 优化为1分钟检查间隔
-- 🚀 一键部署脚本
-- 📱 Telegram代理支持
-
-### v1.0.0
-- 基础监控功能
-- 命令行配置
-
-## 📄 许可证
-
-MIT License
-
-## 🤝 贡献
-
-欢迎提交Issue和Pull Request！
-
-## ⚠️ 免责声明
-
-本工具仅供学习交流使用，请遵守微博使用条款，不要过度频繁访问。使用者需自行承担使用风险。
+遇到问题？
+1. 查看 `monitor.log` 日志文件
+2. 查看完整的 `README.md`
+3. 提交Issue
 
 ---
 
-**Made with ❤️ for monitoring Weibo**
+**祝使用愉快！** 🎉
 

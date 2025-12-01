@@ -4,36 +4,51 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
 
-# 日志文件
+# 虚拟环境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志
 *.log
 
-# 配置文件（可能包含敏感信息）
-config.yaml
-
-# 通知记录
-notified_weibo.txt
-
-# 临时文件
-*.tmp
-*.html
-*.htm
-
-# Chrome驱动
-chromedriver*
+# 环境变量
+.env
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# Playwright
+.playwright/
 
 # 系统文件
 .DS_Store
 Thumbs.db
+

@@ -1,43 +1,60 @@
-# 微博监控配置文件示例
+# 网页监控系统配置示例
 # 复制此文件为 config.yaml 并修改相应配置
 
-# 要监控的微博用户页面URL
-weibo_url: "https://weibo.com/u/2656274875"
+# Flask服务配置
+flask:
+  host: 0.0.0.0
+  port: 5000
+  debug: false
 
-# 关键词列表（支持多个关键词，只要匹配任意一个就会发送通知）
-# 示例关键词，请根据你的需求修改
-keywords:
-  - "重要通知"
-  - "紧急"
-  - "关键词1"
-  - "关键词2"
+# 数据库配置
+database:
+  path: monitor.db
 
-# Telegram 配置
+# 日志配置
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: monitor.log
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Telegram配置（可选，也可以在Web界面配置）
 telegram:
-  # 你的Telegram Bot Token（从 @BotFather 获取）
-  # 示例: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-  bot_token: "YOUR_BOT_TOKEN_HERE"
-  
-  # 你的Telegram Chat ID（可以通过 @userinfobot 获取）
-  # 示例: "123456789" 或 "-123456789"
-  chat_id: "YOUR_CHAT_ID_HERE"
+  bot_token: ""
+  chat_id: ""
 
-# 监控设置
+# 监控配置
 monitor:
-  # 检查间隔（分钟）
-  # 建议: 3-10分钟，不要太频繁以免被限制
-  check_interval: 5
-  
-  # 是否启用无头模式（建议启用以节省资源）
-  # true: 后台运行不显示浏览器窗口
-  # false: 显示浏览器窗口（用于调试）
+  default_interval: 300  # 默认检查间隔（秒）
+  max_concurrent: 3      # 最大并发监控数
+  timeout: 30            # 页面加载超时（秒）
+  retry_times: 2         # 失败重试次数
+
+# 浏览器配置
+browser:
   headless: true
-  
-  # 页面加载等待时间（秒）
-  # 如果网络较慢，可以适当增加此值
-  page_load_timeout: 30
-  
-  # 已通知的微博ID存储文件
-  # 用于记录已发送通知的微博，避免重复通知
-  notified_file: "notified_weibo.txt"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  viewport:
+    width: 1920
+    height: 1080
+  locale: zh-CN
+  timezone: Asia/Shanghai
+
+# 代理配置（可选）
+proxy:
+  enabled: false
+  server: ""      # http://proxy.example.com:8080
+  username: ""
+  password: ""
+
+# 通知配置
+notification:
+  telegram_enabled: true
+  email_enabled: false     # 暂未实现
+  webhook_enabled: false   # 暂未实现
+
+# 性能配置
+performance:
+  cleanup_logs_days: 30    # 清理N天前的日志
+  max_logs_count: 10000    # 最大日志条数
 

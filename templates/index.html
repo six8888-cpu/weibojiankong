@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.running {
+            background: #10b981;
+        }
+
+        .status-indicator.stopped {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .tabs {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            background: #f3f4f6;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th,
+        table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        table th {
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        table tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .url-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .url-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .url-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .url-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .keyword-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #e0e7ff;
+            color: #4338ca;
+            border-radius: 6px;
+            margin: 5px 5px 5px 0;
+            font-size: 0.9em;
+        }
+
+        .keyword-tag .remove {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .status-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🔍 网页监控系统</h1>
+            <p>智能监控 · 实时通知 · 反爬绕过</p>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">监控状态：加载中...</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="startMonitor()">▶ 启动监控</button>
+                <button class="btn btn-danger" onclick="stopMonitor()">⏹ 停止监控</button>
+                <button class="btn btn-warning" onclick="runMonitorNow()">⚡ 立即执行</button>
+            </div>
+        </div>
+
+        <!-- 选项卡 -->
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('urls')">📋 监控列表</button>
+                <button class="tab-button" onclick="switchTab('keywords')">🔑 关键词管理</button>
+                <button class="tab-button" onclick="switchTab('logs')">📊 监控日志</button>
+                <button class="tab-button" onclick="switchTab('telegram')">✈️ Telegram配置</button>
+            </div>
+
+            <!-- 监控列表 -->
+            <div class="tab-content active" id="urls-tab">
+                <button class="btn btn-primary" onclick="showAddUrlModal()">➕ 添加监控网址</button>
+                <div id="urlsList"></div>
+            </div>
+
+            <!-- 关键词管理 -->
+            <div class="tab-content" id="keywords-tab">
+                <button class="btn btn-primary" onclick="showAddKeywordModal()">➕ 添加关键词</button>
+                <div id="keywordsList"></div>
+            </div>
+
+            <!-- 监控日志 -->
+            <div class="tab-content" id="logs-tab">
+                <div id="logsList"></div>
+            </div>
+
+            <!-- Telegram配置 -->
+            <div class="tab-content" id="telegram-tab">
+                <div class="form-group">
+                    <label>Bot Token</label>
+                    <input type="text" id="botToken" placeholder="请输入Telegram Bot Token">
+                </div>
+                <div class="form-group">
+                    <label>Chat ID</label>
+                    <input type="text" id="chatId" placeholder="请输入Chat ID">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveTelegramConfig()">💾 保存配置</button>
+                    <button class="btn btn-secondary" onclick="testTelegram()">🧪 测试连接</button>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 8px;">
+                    <h3 style="margin-bottom: 10px;">📖 使用说明</h3>
+                    
+                    <h4 style="margin-top: 15px; margin-bottom: 8px; color: #1f2937;">创建机器人：</h4>
+                    <ol style="line-height: 1.8; color: #4b5563;">
+                        <li>在Telegram中搜索 <code>@BotFather</code></li>
+                        <li>发送 <code>/newbot</code> 创建新机器人</li>
+                        <li>按提示设置机器人名称，获取 <strong>Bot Token</strong></li>
+                    </ol>
+                    
+                    <h4 style="margin-top: 15px; margin-bottom: 8px; color: #1f2937;">获取群组Chat ID：</h4>
+                    <ol style="line-height: 1.8; color: #4b5563;">
+                        <li>创建一个Telegram群组</li>
+                        <li>将你的机器人添加到群组中</li>
+                        <li>在群组中发送任意消息（@你的机器人）</li>
+                        <li>访问：<code>https://api.telegram.org/bot你的BOT_TOKEN/getUpdates</code></li>
+                        <li>在返回的JSON中找到 <code>"chat":{"id":-1001234567890}</code></li>
+                        <li>复制这个负数ID（包括负号），这就是群组的Chat ID</li>
+                    </ol>
+                    
+                    <h4 style="margin-top: 15px; margin-bottom: 8px; color: #1f2937;">⚠️ 注意事项：</h4>
+                    <ul style="line-height: 1.8; color: #4b5563;">
+                        <li>群组Chat ID是<strong>负数</strong>（如：-1001234567890）</li>
+                        <li>个人Chat ID是<strong>正数</strong>（如：123456789）</li>
+                        <li>机器人必须是群组管理员或有发送消息权限</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加URL模态框 -->
+    <div class="modal" id="addUrlModal">
+        <div class="modal-content">
+            <div class="modal-header">添加监控网址</div>
+            <div class="form-group">
+                <label>网址名称</label>
+                <input type="text" id="urlName" placeholder="例如：新闻网站">
+            </div>
+            <div class="form-group">
+                <label>网址URL *</label>
+                <input type="url" id="urlAddress" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label>检查间隔（秒）</label>
+                <input type="number" id="urlInterval" value="300" min="60">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="addUrl()">确定</button>
+                <button class="btn btn-secondary" onclick="closeModal('addUrlModal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加关键词模态框 -->
+    <div class="modal" id="addKeywordModal">
+        <div class="modal-content">
+            <div class="modal-header">添加关键词</div>
+            <div class="form-group">
+                <label>选择监控网址 *</label>
+                <select id="keywordUrlId">
+                    <option value="">请选择...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>关键词 *</label>
+                <input type="text" id="keywordText" placeholder="例如：促销、优惠">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="keywordFuzzy" checked>
+                <label for="keywordFuzzy">模糊匹配（推荐）</label>
+            </div>
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="addKeyword()">确定</button>
+                <button class="btn btn-secondary" onclick="closeModal('addKeywordModal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentTab = 'urls';
+        let urlsData = [];
+        let keywordsData = [];
+
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMonitorStatus();
+            loadData();
+            setInterval(loadMonitorStatus, 5000); // 每5秒更新状态
+        });
+
+        // 切换选项卡
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+            
+            currentTab = tab;
+            loadData();
+        }
+
+        // 加载数据
+        function loadData() {
+            if (currentTab === 'urls') {
+                loadUrls();
+            } else if (currentTab === 'keywords') {
+                loadKeywords();
+            } else if (currentTab === 'logs') {
+                loadLogs();
+            } else if (currentTab === 'telegram') {
+                loadTelegramConfig();
+            }
+        }
+
+        // 加载监控状态
+        async function loadMonitorStatus() {
+            try {
+                const response = await fetch('/api/monitor/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const indicator = document.getElementById('statusIndicator');
+                    const text = document.getElementById('statusText');
+                    
+                    if (result.data.running) {
+                        indicator.className = 'status-indicator running';
+                        text.textContent = '监控状态：运行中';
+                        if (result.data.next_run_time) {
+                            const nextRun = new Date(result.data.next_run_time);
+                            text.textContent += ` (下次: ${nextRun.toLocaleString('zh-CN')})`;
+                        }
+                    } else {
+                        indicator.className = 'status-indicator stopped';
+                        text.textContent = '监控状态：已停止';
+                    }
+                }
+            } catch (error) {
+                console.error('加载监控状态失败:', error);
+            }
+        }
+
+        // 加载URL列表
+        async function loadUrls() {
+            try {
+                const response = await fetch('/api/urls');
+                const result = await response.json();
+                
+                if (result.success) {
+                    urlsData = result.data;
+                    renderUrls();
+                }
+            } catch (error) {
+                console.error('加载URL列表失败:', error);
+            }
+        }
+
+        // 渲染URL列表
+        function renderUrls() {
+            const container = document.getElementById('urlsList');
+            
+            if (urlsData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">还没有添加监控网址</p>
+                        <p>点击上方按钮添加第一个监控网址</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = urlsData.map(url => `
+                <div class="url-item">
+                    <div class="url-header">
+                        <div>
+                            <div class="url-title">${url.name || url.url}</div>
+                            <a href="${url.url}" target="_blank" class="url-link">${url.url}</a>
+                        </div>
+                        <div>
+                            <span class="badge ${url.enabled ? 'badge-success' : 'badge-danger'}">
+                                ${url.enabled ? '启用' : '禁用'}
+                            </span>
+                        </div>
+                    </div>
+                    <div style="margin: 15px 0; color: #6b7280;">
+                        ⏱ 检查间隔：${url.check_interval}秒 | 
+                        📅 创建时间：${new Date(url.created_at).toLocaleString('zh-CN')}
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm ${url.enabled ? 'btn-warning' : 'btn-success'}" 
+                                onclick="toggleUrl(${url.id}, ${!url.enabled})">
+                            ${url.enabled ? '禁用' : '启用'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUrl(${url.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 加载关键词列表
+        async function loadKeywords() {
+            try {
+                const response = await fetch('/api/keywords');
+                const result = await response.json();
+                
+                if (result.success) {
+                    keywordsData = result.data;
+                    renderKeywords();
+                }
+            } catch (error) {
+                console.error('加载关键词列表失败:', error);
+            }
+        }
+
+        // 渲染关键词列表
+        function renderKeywords() {
+            const container = document.getElementById('keywordsList');
+            
+            if (keywordsData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">还没有添加关键词</p>
+                        <p>点击上方按钮添加第一个关键词</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 按URL分组
+            const grouped = {};
+            keywordsData.forEach(kw => {
+                if (!grouped[kw.url_id]) {
+                    grouped[kw.url_id] = {
+                        url_name: kw.url_name,
+                        url: kw.url,
+                        keywords: []
+                    };
+                }
+                grouped[kw.url_id].keywords.push(kw);
+            });
+            
+            container.innerHTML = Object.values(grouped).map(group => `
+                <div class="card">
+                    <div class="url-title">${group.url_name}</div>
+                    <a href="${group.url}" target="_blank" class="url-link">${group.url}</a>
+                    <div style="margin-top: 15px;">
+                        ${group.keywords.map(kw => `
+                            <span class="keyword-tag">
+                                ${kw.keyword}
+                                ${kw.fuzzy_match ? '(模糊)' : '(精确)'}
+                                <span class="remove" onclick="deleteKeyword(${kw.id})">×</span>
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 加载日志
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs?limit=50');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderLogs(result.data);
+                }
+            } catch (error) {
+                console.error('加载日志失败:', error);
+            }
+        }
+
+        // 渲染日志
+        function renderLogs(logs) {
+            const container = document.getElementById('logsList');
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 1.2em;">暂无监控日志</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>网址</th>
+                            <th>关键词</th>
+                            <th>状态</th>
+                            <th>消息</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td>${new Date(log.created_at).toLocaleString('zh-CN')}</td>
+                                <td>${log.url_name}</td>
+                                <td>${log.keyword || '-'}</td>
+                                <td>
+                                    <span class="badge ${log.found ? 'badge-success' : 'badge-info'}">
+                                        ${log.found ? '✓ 找到' : '○ 未找到'}
+                                    </span>
+                                </td>
+                                <td>${log.message || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // 加载Telegram配置
+        async function loadTelegramConfig() {
+            try {
+                const response = await fetch('/api/telegram/config');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    document.getElementById('botToken').value = '';
+                    document.getElementById('chatId').value = result.data.chat_id || '';
+                }
+            } catch (error) {
+                console.error('加载Telegram配置失败:', error);
+            }
+        }
+
+        // 显示添加URL模态框
+        function showAddUrlModal() {
+            document.getElementById('urlName').value = '';
+            document.getElementById('urlAddress').value = '';
+            document.getElementById('urlInterval').value = '300';
+            document.getElementById('addUrlModal').classList.add('active');
+        }
+
+        // 添加URL
+        async function addUrl() {
+            const name = document.getElementById('urlName').value.trim();
+            const url = document.getElementById('urlAddress').value.trim();
+            const interval = parseInt(document.getElementById('urlInterval').value);
+            
+            if (!url) {
+                alert('请输入网址URL');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/urls', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, url, check_interval: interval})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal('addUrlModal');
+                    loadUrls();
+                    showMessage('添加成功', 'success');
+                } else {
+                    alert('添加失败：' + result.message);
+                }
+            } catch (error) {
+                alert('添加失败：' + error.message);
+            }
+        }
+
+        // 切换URL状态
+        async function toggleUrl(id, enabled) {
+            try {
+                const response = await fetch(`/api/urls/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({enabled})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadUrls();
+                    showMessage(enabled ? '已启用' : '已禁用', 'success');
+                }
+            } catch (error) {
+                alert('操作失败：' + error.message);
+            }
+        }
+
+        // 删除URL
+        async function deleteUrl(id) {
+            if (!confirm('确定要删除这个监控网址吗？相关的关键词也会被删除。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/urls/${id}`, {method: 'DELETE'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadUrls();
+                    showMessage('删除成功', 'success');
+                }
+            } catch (error) {
+                alert('删除失败：' + error.message);
+            }
+        }
+
+        // 显示添加关键词模态框
+        async function showAddKeywordModal() {
+            // 加载URL列表到下拉框
+            const response = await fetch('/api/urls');
+            const result = await response.json();
+            
+            if (result.success) {
+                const select = document.getElementById('keywordUrlId');
+                select.innerHTML = '<option value="">请选择...</option>' +
+                    result.data.filter(url => url.enabled).map(url => 
+                        `<option value="${url.id}">${url.name}</option>`
+                    ).join('');
+            }
+            
+            document.getElementById('keywordText').value = '';
+            document.getElementById('keywordFuzzy').checked = true;
+            document.getElementById('addKeywordModal').classList.add('active');
+        }
+
+        // 添加关键词
+        async function addKeyword() {
+            const urlId = document.getElementById('keywordUrlId').value;
+            const keyword = document.getElementById('keywordText').value.trim();
+            const fuzzyMatch = document.getElementById('keywordFuzzy').checked;
+            
+            if (!urlId || !keyword) {
+                alert('请选择网址并输入关键词');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/keywords', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url_id: parseInt(urlId), keyword, fuzzy_match: fuzzyMatch})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal('addKeywordModal');
+                    loadKeywords();
+                    showMessage('添加成功', 'success');
+                } else {
+                    alert('添加失败：' + result.message);
+                }
+            } catch (error) {
+                alert('添加失败：' + error.message);
+            }
+        }
+
+        // 删除关键词
+        async function deleteKeyword(id) {
+            if (!confirm('确定要删除这个关键词吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/keywords/${id}`, {method: 'DELETE'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadKeywords();
+                    showMessage('删除成功', 'success');
+                }
+            } catch (error) {
+                alert('删除失败：' + error.message);
+            }
+        }
+
+        // 保存Telegram配置
+        async function saveTelegramConfig() {
+            const botToken = document.getElementById('botToken').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+            
+            if (!botToken || !chatId) {
+                alert('请输入Bot Token和Chat ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/telegram/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({bot_token: botToken, chat_id: chatId})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('保存成功', 'success');
+                    document.getElementById('botToken').value = '';
+                } else {
+                    alert('保存失败：' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败：' + error.message);
+            }
+        }
+
+        // 测试Telegram
+        async function testTelegram() {
+            try {
+                const response = await fetch('/api/telegram/test', {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('测试消息已发送，请检查Telegram', 'success');
+                } else {
+                    alert('测试失败：' + result.message);
+                }
+            } catch (error) {
+                alert('测试失败：' + error.message);
+            }
+        }
+
+        // 启动监控
+        async function startMonitor() {
+            try {
+                const response = await fetch('/api/monitor/start', {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('监控已启动', 'success');
+                    loadMonitorStatus();
+                } else {
+                    alert('启动失败：' + result.message);
+                }
+            } catch (error) {
+                alert('启动失败：' + error.message);
+            }
+        }
+
+        // 停止监控
+        async function stopMonitor() {
+            try {
+                const response = await fetch('/api/monitor/stop', {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('监控已停止', 'success');
+                    loadMonitorStatus();
+                } else {
+                    alert('停止失败：' + result.message);
+                }
+            } catch (error) {
+                alert('停止失败：' + error.message);
+            }
+        }
+
+        // 立即执行监控
+        async function runMonitorNow() {
+            try {
+                const response = await fetch('/api/monitor/run', {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('监控任务已开始执行，请稍后查看日志', 'success');
+                } else {
+                    alert('执行失败：' + result.message);
+                }
+            } catch (error) {
+                alert('执行失败：' + error.message);
+            }
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            // 可以用更好的通知组件替换
+            alert(message);
+        }
+
+        // 点击模态框外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

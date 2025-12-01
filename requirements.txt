@@ -1,13 +1,23 @@
-# 网页监控依赖包
-selenium==4.15.2
-undetected-chromedriver==3.5.4
-beautifulsoup4==4.12.2
+# Web框架
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# 任务调度
+APScheduler==3.10.4
+
+# 无头浏览器（反爬虫绕过）
+playwright==1.40.0
+
+# HTTP客户端
+aiohttp==3.9.1
 requests==2.31.0
-python-telegram-bot==20.7
-httpx[socks]==0.25.2
-lxml==4.9.3
-pyyaml==6.0.1
-schedule==1.2.0
-flask==3.0.0
-flask-cors==4.0.0
+
+# 数据库
+# SQLite已内置，无需额外安装
+
+# 日志
+colorlog==6.8.0
+
+# 工具库
+python-dotenv==1.0.0
 
