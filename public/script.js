@@ -151,66 +151,12 @@ function renderUsers() {
                 <div class="user-info">
                     <h3>${user.displayName || user.username}</h3>
                     <p>@${user.username}</p>
-                </div>
-                <div class="user-actions">
-                    <span class="status-badge ${user.enabled ? 'active' : 'inactive'}">
-                        ${user.enabled ? '✓ 启用' : '✗ 禁用'}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="user-options">
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="enabled-${user.userId}" 
-                           ${user.enabled ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'enabled', this.checked)">
-                    <label for="enabled-${user.userId}">启用监控</label>
-                </div>
-                
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="tweets-${user.userId}" 
-                           ${user.monitorTweets ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'monitorTweets', this.checked)">
-                    <label for="tweets-${user.userId}">📝 新推文</label>
-                </div>
-                
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="replies-${user.userId}" 
-                           ${user.monitorReplies ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'monitorReplies', this.checked)">
-                    <label for="replies-${user.userId}">💬 回复</label>
-                </div>
-                
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="pinned-${user.userId}" 
-                           ${user.monitorPinned ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'monitorPinned', this.checked)">
-                    <label for="pinned-${user.userId}">📌 置顶</label>
-                </div>
-                
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="retweets-${user.userId}" 
-                           ${user.monitorRetweets ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'monitorRetweets', this.checked)">
-                    <label for="retweets-${user.userId}">🔄 转发</label>
-                </div>
-                
-                <div class="option-item">
-                    <input type="checkbox" 
-                           id="quotes-${user.userId}" 
-                           ${user.monitorQuotes ? 'checked' : ''}
-                           onchange="updateUserOption('${user.userId}', 'monitorQuotes', this.checked)">
-                    <label for="quotes-${user.userId}">💬 引用</label>
+                    <p style="color: #888; font-size: 0.9em;">用户ID: ${user.userId || '未设置'}</p>
                 </div>
             </div>
             
             <div class="user-meta">
-                添加时间: ${new Date(user.addedAt).toLocaleString('zh-CN')}
+                <p>添加时间: ${new Date(user.addedAt).toLocaleString('zh-CN')}</p>
                 <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.userId}', '${user.username}')" style="float: right;">🗑️ 删除</button>
             </div>
         </div>
@@ -252,29 +198,8 @@ async function addUser() {
     }
 }
 
-// 更新用户选项
-async function updateUserOption(userId, option, value) {
-    try {
-        const response = await fetch(`/api/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ [option]: value })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast('更新成功', 'success');
-            loadUsers();
-        } else {
-            showToast('更新失败: ' + result.message, 'error');
-        }
-    } catch (error) {
-        showToast('更新失败: ' + error.message, 'error');
-    }
-}
+// 更新用户选项（暂未使用）
+// async function updateUserOption(userId, option, value) { ... }
 
 // 删除用户
 async function deleteUser(userId, username) {
@@ -306,26 +231,8 @@ async function deleteUser(userId, username) {
     }
 }
 
-// 手动执行监控
-async function runMonitor() {
-    showToast('正在执行监控检查...', 'info');
-    
-    try {
-        const response = await fetch('/api/monitor/run', {
-            method: 'POST'
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast('监控任务已启动，请稍后查看Telegram', 'success');
-        } else {
-            showToast('启动失败: ' + result.message, 'error');
-        }
-    } catch (error) {
-        showToast('启动失败: ' + error.message, 'error');
-    }
-}
+// 手动执行监控（功能待实现）
+// async function runMonitor() { ... }
 
 // 处理回车键
 function handleEnter(event) {
